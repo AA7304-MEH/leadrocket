@@ -49,17 +49,21 @@ export const PricingSection = () => {
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {plans.map((plan, index) => (
             <Card 
               key={index} 
-              className={`relative shadow-elegant hover:shadow-premium transition-all duration-300 ${
-                plan.popular ? 'ring-2 ring-primary scale-105' : ''
+              className={`group relative bg-gradient-card shadow-elegant hover:shadow-floating transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 border animate-slide-up overflow-hidden ${
+                plan.popular ? 'ring-2 ring-primary/50 border-primary/20 shadow-glow' : 'border-primary/10'
               }`}
+              style={{ animationDelay: `${index * 0.2}s` }}
             >
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-gradient-primary text-primary-foreground px-4 py-1">
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                  <Badge className="bg-gradient-primary text-primary-foreground px-6 py-2 shadow-glow animate-pulse-glow">
                     Most Popular
                   </Badge>
                 </div>
