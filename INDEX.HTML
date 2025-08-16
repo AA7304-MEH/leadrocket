@@ -3,530 +3,236 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LeadRocket.ai - AI-Powered B2B Lead Generation</title>
-  <meta name="description" content="AI finds companies actively looking for your solution — and delivers 50+ verified leads/week." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <title>LeadRocket.ai - AI-Powered B2B Leads</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Reset & Base Styles */
     :root {
-      --bg-primary: #ffffff;
-      --bg-secondary: #f8f9fa;
-      --text-primary: #111827;
-      --text-secondary: #4b5563;
-      --accent: #6366f1;
-      --accent-hover: #4f46e5;
-      --border: #e5e7eb;
-      --shadow: rgba(0, 0, 0, 0.1);
+      --bg: #ffffff;
+      --text: #1a1a1a;
+      --primary: #000000;
+      --light-gray: #f4f4f4;
+      --border: #e0e0e0;
     }
-
-    [data-theme="dark"] {
-      --bg-primary: #111827;
-      --bg-secondary: #1f2937;
-      --text-primary: #f9fafb;
-      --text-secondary: #d1d5db;
-      --accent: #8b5cf6;
-      --accent-hover: #7c3aed;
-      --border: #374151;
-      --shadow: rgba(0, 0, 0, 0.3);
+    .dark {
+      --bg: #1a1a1a;
+      --text: #f4f4f4;
+      --primary: #00d4ff;
+      --light-gray: #2a2a2a;
+      --border: #444;
     }
-
-    *, *::before, *::after {
+    * {
+      margin: 0; padding: 0;
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
     }
-
     body {
+      background: var(--bg);
+      color: var(--text);
       font-family: 'Inter', sans-serif;
-      background-color: var(--bg-primary);
-      color: var(--text-primary);
       line-height: 1.6;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      transition: background 0.3s, color 0.3s;
     }
-
-    img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-    }
-
-    a {
-      text-decoration: none;
-    }
-
-    button {
-      cursor: pointer;
-      border: none;
-      font-family: inherit;
-    }
-
-    /* Layout */
     .container {
-      width: 100%;
+      width: 90%;
       max-width: 1200px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 20px;
     }
-
     header {
-      padding: 24px 0;
-    }
-
-    .header-content {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
     }
-
     .logo {
       font-weight: 700;
       font-size: 1.5rem;
-      color: var(--text-primary);
     }
-
-    .theme-toggle {
-      background: none;
-      color: var(--text-primary);
-      font-size: 1.25rem;
-      padding: 8px;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .cta-button {
+      background: var(--primary);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
       cursor: pointer;
+      text-decoration: none;
     }
-
-    /* Hero */
     .hero {
-      padding: 80px 0;
       text-align: center;
+      padding: 80px 0;
     }
-
     .hero h1 {
       font-size: 3rem;
-      font-weight: 700;
-      margin-bottom: 16px;
-      line-height: 1.2;
+      margin-bottom: 20px;
     }
-
     .hero p {
-      font-size: 1.25rem;
-      color: var(--text-secondary);
-      max-width: 700px;
-      margin: 0 auto 32px;
+      font-size: 1.2rem;
+      max-width: 800px;
+      margin: 0 auto 30px;
     }
-
-    .cta-button {
-      display: inline-block;
-      background-color: var(--accent);
-      color: white;
-      padding: 16px 32px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 1.1rem;
-      transition: background-color 0.3s ease;
-      box-shadow: 0 4px 6px var(--shadow);
+    .section {
+      padding: 60px 0;
     }
-
-    .cta-button:hover {
-      background-color: var(--accent-hover);
-    }
-
-    /* Section */
-    section {
-      padding: 80px 0;
-    }
-
-    .section-title {
-      font-size: 2.25rem;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    .section-subtitle {
-      text-align: center;
-      color: var(--text-secondary);
-      max-width: 700px;
-      margin: 0 auto 60px;
-    }
-
-    /* How It Works */
     .steps {
       display: flex;
-      justify-content: center;
-      gap: 32px;
       flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
     }
-
     .step {
-      flex: 1;
-      min-width: 250px;
-      max-width: 350px;
-      background-color: var(--bg-secondary);
-      padding: 32px;
-      border-radius: 12px;
+      background: var(--light-gray);
+      padding: 30px;
+      border-radius: 10px;
+      width: 300px;
       text-align: center;
-      box-shadow: 0 4px 12px var(--shadow);
     }
-
-    .step-number {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      background-color: var(--accent);
-      color: white;
-      border-radius: 50%;
-      font-weight: 700;
-      line-height: 40px;
-      margin-bottom: 16px;
-    }
-
-    .step h3 {
-      margin-bottom: 12px;
-      font-size: 1.5rem;
-    }
-
-    /* Testimonials */
-    .testimonials {
-      background-color: var(--bg-secondary);
-      border-radius: 12px;
-      padding: 40px;
-      max-width: 800px;
-      margin: 0 auto;
-      box-shadow: 0 4px 12px var(--shadow);
-    }
-
-    .testimonial {
-      margin-bottom: 32px;
-      font-style: italic;
-      position: relative;
-    }
-
-    .testimonial:last-child {
-      margin-bottom: 0;
-    }
-
-    .testimonial-author {
-      font-weight: 600;
-      margin-top: 12px;
-      color: var(--text-primary);
-    }
-
-    /* Pricing */
-    .pricing {
+    .testimonials, .pricing {
       display: flex;
-      justify-content: center;
-      gap: 32px;
       flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
     }
-
-    .plan {
+    .card {
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 40px;
-      width: 100%;
-      max-width: 350px;
-      background-color: var(--bg-secondary);
-      box-shadow: 0 4px 12px var(--shadow);
+      border-radius: 10px;
+      padding: 30px;
+      width: 300px;
     }
-
-    .plan h3 {
-      font-size: 1.5rem;
-      margin-bottom: 16px;
-    }
-
-    .price {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 24px;
-    }
-
-    .price span {
-      font-size: 1rem;
-      font-weight: 400;
-      color: var(--text-secondary);
-    }
-
-    .features {
-      list-style: none;
-      margin-bottom: 32px;
-    }
-
-    .features li {
-      padding: 8px 0;
-      border-bottom: 1px solid var(--border);
-      color: var(--text-secondary);
-    }
-
-    .features li::before {
-      content: "✓";
-      color: var(--accent);
-      margin-right: 8px;
-      font-weight: bold;
-    }
-
-    /* Guarantee */
-    .guarantee {
-      background-color: var(--bg-secondary);
-      border-radius: 12px;
-      padding: 32px;
-      text-align: center;
-      max-width: 700px;
-      margin: 60px auto;
-      box-shadow: 0 4px 12px var(--shadow);
-    }
-
-    .guarantee p {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    /* FAQ */
     .faq {
       max-width: 800px;
       margin: 0 auto;
     }
-
     .faq-item {
-      margin-bottom: 24px;
+      margin-bottom: 15px;
       border-bottom: 1px solid var(--border);
-      padding-bottom: 16px;
+      padding-bottom: 15px;
     }
-
-    .faq-question {
-      font-weight: 600;
-      margin-bottom: 8px;
-      font-size: 1.1rem;
-    }
-
-    .faq-answer {
-      color: var(--text-secondary);
-    }
-
-    /* Footer */
     footer {
       text-align: center;
       padding: 40px 0;
-      color: var(--text-secondary);
-      font-size: 0.9rem;
       border-top: 1px solid var(--border);
-      margin-top: 80px;
+      margin-top: 60px;
     }
-
-    /* Responsive */
     @media (max-width: 768px) {
       .hero h1 {
-        font-size: 2.5rem;
-      }
-
-      .hero p,
-      .section-title {
-        font-size: 1.1rem;
-      }
-
-      section {
-        padding: 60px 0;
-      }
-
-      .steps,
-      .pricing {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .step,
-      .plan {
-        width: 100%;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .hero h1 {
-        font-size: 2rem;
-      }
-
-      .hero p {
-        font-size: 1rem;
-      }
-
-      .container {
-        padding: 0 16px;
+        font-size: 2.2rem;
       }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="container header-content">
-      <a href="#" class="logo">LeadRocket.ai</a>
-      <button class="theme-toggle" aria-label="Toggle dark mode" id="theme-toggle">🌓</button>
-    </div>
-  </header>
+  <div class="container">
+    <header>
+      <div class="logo">LeadRocket.ai</div>
+      <a href="#waitlist" class="cta-button">Join Waitlist</a>
+    </header>
 
-  <main>
-    <!-- Hero -->
     <section class="hero">
-      <div class="container">
-        <h1>Stop Chasing Leads. Let Them Come to You.</h1>
-        <p>AI finds companies actively looking for your solution — and delivers 50+ verified leads/week.</p>
-        <a href="#waitlist" class="cta-button">Join 500+ Founders on Waitlist →</a>
+      <h1>Stop Chasing Leads. Let Them Come to You.</h1>
+      <p>AI finds companies actively looking for your solution — and delivers 50+ verified leads/week.</p>
+      <a href="#waitlist" class="cta-button">Join 500+ Founders on Waitlist →</a>
+    </section>
 
-        <div style="margin-top: 60px;">
-          <img src="https://placehold.co/1000x600/111827/FFFFFF?text=LeadRocket+Dashboard" alt="LeadRocket.ai dashboard showing AI-powered lead generation" />
+    <section class="section">
+      <h2 style="text-align:center;margin-bottom:40px;">How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <h3>1. Define Your ICP</h3>
+          <p>Tell us your ideal customer (industry, size, tech stack).</p>
+        </div>
+        <div class="step">
+          <h3>2. AI Finds Intent</h3>
+          <p>Our AI scans job posts, funding, and tech changes.</p>
+        </div>
+        <div class="step">
+          <h3>3. Get Leads Daily</h3>
+          <p>We deliver verified leads to your inbox every Monday.</p>
         </div>
       </div>
     </section>
 
-    <!-- How It Works -->
-    <section>
-      <div class="container">
-        <h2 class="section-title">How It Works</h2>
-        <p class="section-subtitle">Get high-intent B2B leads without cold outreach.</p>
-
-        <div class="steps">
-          <div class="step">
-            <span class="step-number">1</span>
-            <h3>You define your ideal customer</h3>
-            <p>Tell us your niche, industry, and tech stack. We learn what your perfect customer looks like.</p>
-          </div>
-          <div class="step">
-            <span class="step-number">2</span>
-            <h3>Our AI finds buying intent signals</h3>
-            <p>We scan job posts, funding news, tech changes, and search behavior to find active buyers.</p>
-          </div>
-          <div class="step">
-            <span class="step-number">3</span>
-            <h3>We deliver verified leads daily</h3>
-            <p>Get 50+ qualified leads per week with contact info, intent data, and next-step insights.</p>
-          </div>
+    <section class="section">
+      <h2 style="text-align:center;">Testimonials</h2>
+      <div class="testimonials">
+        <div class="card">
+          <p>"We booked $80K in demos in 3 weeks."</p>
+          <p><strong>— Sarah, CEO @ GrowthStack</strong></p>
+        </div>
+        <div class="card">
+          <p>"Finally, leads that actually reply."</p>
+          <p><strong>— James, Agency Owner</strong></p>
         </div>
       </div>
     </section>
 
-    <!-- Testimonials -->
-    <section>
-      <div class="container">
-        <h2 class="section-title">Trusted by Founders</h2>
-        <div class="testimonials">
-          <div class="testimonial">
-            <p>"We booked $80K in demos in 3 weeks. LeadRocket found companies that were already evaluating tools like ours."</p>
-            <div class="testimonial-author">— Sarah, CEO @ GrowthStack</div>
-          </div>
-          <div class="testimonial">
-            <p>"Finally, leads that actually reply. No more cold outreach. Our sales team closes 5x faster."</p>
-            <div class="testimonial-author">— James, Agency Owner</div>
-          </div>
+    <section class="section" id="pricing">
+      <h2 style="text-align:center;">Pricing</h2>
+      <div class="pricing">
+        <div class="card">
+          <h3>Pro</h3>
+          <p><strong>$997/month</strong></p>
+          <p>50 leads/week</p>
+          <p>AI outreach sequences</p>
+          <p>CRM sync</p>
+          <a href="#waitlist" class="cta-button" style="margin-top:20px;">Start Free Trial</a>
+        </div>
+        <div class="card">
+          <h3>Enterprise</h3>
+          <p><strong>$2,497/month</strong></p>
+          <p>150 leads/week</p>
+          <p>Dedicated rep</p>
+          <p>Custom AI training</p>
+          <a href="#waitlist" class="cta-button" style="margin-top:20px;">Book Demo</a>
         </div>
       </div>
     </section>
 
-    <!-- Pricing -->
-    <section>
-      <div class="container">
-        <h2 class="section-title">Simple, Transparent Pricing</h2>
-        <p class="section-subtitle">Get started with AI-powered leads in minutes.</p>
+    <section class="section">
+      <h2 style="text-align:center;">Guarantee</h2>
+      <p style="text-align:center;max-width:600px;margin:20px auto;">
+        Get 50 qualified leads in your first week — or 50% off. No risk.
+      </p>
+    </section>
 
-        <div class="pricing">
-          <div class="plan">
-            <h3>Pro</h3>
-            <div class="price">$997<span>/month</span></div>
-            <ul class="features">
-              <li>50 leads per week</li>
-              <li>AI-powered outreach sequences</li>
-              <li>CRM sync (HubSpot, Salesforce)</li>
-              <li>Email & LinkedIn contact info</li>
-              <li>Weekly performance reports</li>
-            </ul>
-            <a href="#waitlist" class="cta-button">Join Waitlist →</a>
-          </div>
-          <div class="plan">
-            <h3>Enterprise</h3>
-            <div class="price">$2,497<span>/month</span></div>
-            <ul class="features">
-              <li>150 leads per week</li>
-              <li>AI outreach + dedicated sales rep</li>
-              <li>CRM & Slack integration</li>
-              <li>Custom intent filters</li>
-              <li>Priority support & onboarding</li>
-            </ul>
-            <a href="#waitlist" class="cta-button">Join Waitlist →</a>
-          </div>
+    <section class="section" id="faq">
+      <h2 style="text-align:center;">FAQ</h2>
+      <div class="faq">
+        <div class="faq-item">
+          <h3>Is this legal?</h3>
+          <p>Yes. We use only public data (LinkedIn, job posts, funding news).</p>
+        </div>
+        <div class="faq-item">
+          <h3>How do you find intent signals?</h3>
+          <p>We monitor hiring, funding, tech stack changes, and forum activity.</p>
         </div>
       </div>
     </section>
 
-    <!-- Guarantee -->
-    <section>
-      <div class="container">
-        <div class="guarantee">
-          <p>Get 50 qualified leads in Week 1 — or 50% off your first month.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Final CTA -->
-    <section class="hero">
-      <div class="container">
-        <h2>Start Getting Leads Tomorrow</h2>
-        <p>Join 500+ founders who stopped chasing and started scaling.</p>
-        <a href="#waitlist" class="cta-button">Start Getting Leads Tomorrow →</a>
-      </div>
-    </section>
-
-    <!-- FAQ -->
-    <section>
-      <div class="container">
-        <h2 class="section-title">Frequently Asked Questions</h2>
-        <div class="faq">
-          <div class="faq-item">
-            <div class="faq-question">Is this legal?</div>
-            <div class="faq-answer">Yes. We only use publicly available data from company websites, job boards, press releases, and funding announcements. We comply with GDPR and CCPA.</div>
-          </div>
-          <div class="faq-item">
-            <div class="faq-question">How do you find intent?</div>
-            <div class="faq-answer">Our AI monitors signals like new job postings (hiring for roles that need your product), recent funding rounds, technology stack changes, content searches, and partnership announcements.</div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="container">
-      <p>Powered by AI</p>
-    </div>
-  </footer>
+    <footer>
+      <p>Powered by AI | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
+    </footer>
+  </div>
 
   <script>
-    // Dark/Light Mode Toggle
-    const themeToggle = document.getElementById('theme-toggle');
-    const body = document.body;
-
-    // Check user preference
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    if (currentTheme === 'dark') {
-      body.setAttribute('data-theme', 'dark');
-    }
-
-    themeToggle.addEventListener('click', () => {
-      if (body.getAttribute('data-theme') === 'dark') {
-        body.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'light');
-        themeToggle.textContent = '🌓';
-      } else {
-        body.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-        themeToggle.textContent = '🌞';
-      }
-    });
-
-    // Update icon on load
-    themeToggle.textContent = currentTheme === 'dark' ? '🌞' : '🌓';
+    // Dark mode toggle
+    document.body.classList.add('light');
+    const toggle = document.createElement('button');
+    toggle.innerHTML = '🌓';
+    toggle.style.position = 'fixed';
+    toggle.style.bottom = '20px';
+    toggle.style.right = '20px';
+    toggle.style.padding = '10px';
+    toggle.style.border = 'none';
+    toggle.style.borderRadius = '50%';
+    toggle.style.background = '#000';
+    toggle.style.color = '#fff';
+    toggle.style.cursor = 'pointer';
+    toggle.onclick = () => {
+      document.body.classList.toggle('dark');
+      document.body.classList.toggle('light');
+    };
+    document.body.appendChild(toggle);
   </script>
 </body>
 </html>
