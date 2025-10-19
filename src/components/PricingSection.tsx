@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Check } from "lucide-react";
 
 const plans = [
@@ -37,6 +39,8 @@ const plans = [
 ];
 
 export const PricingSection = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
     <section id="pricing" className="py-24 bg-secondary/30">
       <div className="container mx-auto px-6">
@@ -95,16 +99,18 @@ export const PricingSection = () => {
                   ))}
                 </ul>
                 
-                <Button 
-                  className={`w-full ${
-                    plan.popular 
-                      ? 'bg-gradient-primary hover:opacity-90' 
-                      : 'bg-gradient-primary hover:opacity-90'
-                  }`}
-                  size="lg"
-                >
-                  Start Free Trial
-                </Button>
+                <Link to={isAuthenticated ? "/dashboard" : "/register"}>
+                  <Button
+                    className={`w-full ${
+                      plan.popular
+                        ? 'bg-gradient-primary hover:opacity-90'
+                        : 'bg-gradient-primary hover:opacity-90'
+                    }`}
+                    size="lg"
+                  >
+                    {isAuthenticated ? "Go to Dashboard" : "Start Free Trial"}
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}

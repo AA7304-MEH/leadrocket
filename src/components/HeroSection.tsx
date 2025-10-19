@@ -1,7 +1,11 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import heroBg from "@/assets/hero-bg.jpg";
 
 export const HeroSection = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-secondary">
       {/* Animated Background Elements */}
@@ -39,13 +43,15 @@ export const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-            <Button 
-              size="lg" 
-              className="group text-lg px-10 py-6 bg-gradient-primary hover:shadow-glow transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 shadow-floating"
-            >
-              Join 500+ Founders on Waitlist
-              <div className="ml-2 transition-transform group-hover:translate-x-1">→</div>
-            </Button>
+            <Link to={isAuthenticated ? "/dashboard" : "/register"}>
+              <Button
+                size="lg"
+                className="group text-lg px-10 py-6 bg-gradient-primary hover:shadow-glow transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 shadow-floating"
+              >
+                {isAuthenticated ? "Go to Dashboard" : "Start Free Trial"}
+                <div className="ml-2 transition-transform group-hover:translate-x-1">→</div>
+              </Button>
+            </Link>
           </div>
           
           <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">

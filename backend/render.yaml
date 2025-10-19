@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: leadrockets-backend
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromService:
+          type: mongodb
+          name: leadrockets-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://your-frontend-domain.render.com
+
+  - type: mongodb
+    name: leadrockets-db
+    databaseName: leadrockets
+    ipAllowList: [] # Only accessible by other services in this project
