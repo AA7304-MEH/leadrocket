@@ -47,8 +47,6 @@ const Dashboard: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
-
   const { user, token } = useAuth();
   const navigate = useNavigate();
 
@@ -66,31 +64,31 @@ const Dashboard: React.FC = () => {
 
       try {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${API_URL}/leads?limit=5`, {
+
+        // Fetch recent leads
+        const leadsResponse = await fetch(`${API_URL}/leads?limit=5`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
+        if (leadsResponse.ok) {
+          const data = await leadsResponse.json();
           setLeads(data.data);
+        }
 
-          // Calculate stats from leads data
-          const totalLeads = data.total || 0;
-          const newLeads = data.data.filter((lead: Lead) => lead.status === 'new').length;
-          const qualifiedLeads = data.data.filter((lead: Lead) => lead.status === 'qualified').length;
-          const convertedLeads = data.data.filter((lead: Lead) => lead.status === 'converted').length;
+        // Fetch dashboard stats
+        const statsResponse = await fetch(`${API_URL}/lead-generation/stats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-          setStats({
-            totalLeads,
-            newLeads,
-            qualifiedLeads,
-            convertedLeads,
-            monthlyUsage: user?.usage?.leadsThisMonth || 0,
-            monthlyLimit: user?.usage?.monthlyLimit || 50
-          });
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          setStats(statsData.data);
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);

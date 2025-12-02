@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
+import { MockUser } from '../models/MockUser';
+import { isConnected } from '../utils/database';
 import { AuthRequest } from '../middleware/auth';
 
 // Register user
@@ -8,7 +10,8 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     const { name, email, password } = req.body;
 
     // Check if user exists
-    const existingUser = await User.findOne({ email });
+    const UserModel = isConnected ? User : MockUser;
+    const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -17,7 +20,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     }
 
     // Create user
-    const user = await User.create({
+    const user = await UserModel.create({
       name,
       email,
       password
@@ -55,7 +58,13 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     const { email, password } = req.body;
 
     // Check for user
-    const user = await User.findOne({ email }).select('+password') as any;
+    let user;
+    if (isConnected) {
+      user = await User.findOne({ email }).select('+password');
+    } else {
+      user = await MockUser.findOne({ email });
+    }
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -115,7 +124,8 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
 
     // Get user
-    const user = await User.findById(decoded.id);
+    const UserModel = isConnected ? User : MockUser;
+    const user = await UserModel.findById(decoded.id);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -158,7 +168,8 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
 // Get current logged in user
 export const getMe = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const user = await User.findById(req.user.id);
+    const UserModel = isConnected ? User : MockUser;
+    const user = await UserModel.findById(req.user.id);
 
     res.status(200).json({
       success: true,

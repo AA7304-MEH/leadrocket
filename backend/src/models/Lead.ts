@@ -12,6 +12,8 @@ export interface ILead extends Document {
   companySize?: string;
   location?: string;
   linkedinUrl?: string;
+  painPoints?: string[];
+  salesPitch?: string;
   source: 'ai_generated' | 'manual' | 'import' | 'api';
   status: 'new' | 'contacted' | 'qualified' | 'converted' | 'rejected';
   priority: 'low' | 'medium' | 'high';
@@ -37,6 +39,8 @@ export interface ILead extends Document {
     lastContacted?: Date;
     nextFollowUp?: Date;
   };
+  score: number;
+  scoreReason?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -81,25 +85,10 @@ const LeadSchema: Schema = new Schema({
   },
   companySize: {
     type: String,
-    enum: ['1-10', '11-50', '51-200', '201-500', '501-1000', '1000+']
+    trim: true
   },
   location: {
     type: String,
-    trim: true
-  },
-  linkedinUrl: {
-    type: String,
-    trim: true
-  },
-  source: {
-    type: String,
-    enum: ['ai_generated', 'manual', 'import', 'api'],
-    default: 'ai_generated'
-  },
-  status: {
-    type: String,
-    enum: ['new', 'contacted', 'qualified', 'converted', 'rejected'],
-    default: 'new'
   },
   priority: {
     type: String,
@@ -150,6 +139,16 @@ const LeadSchema: Schema = new Schema({
     lastContacted: Date,
     nextFollowUp: Date
   },
+  score: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
+  scoreReason: {
+    type: String,
+    default: ''
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -166,36 +165,8 @@ LeadSchema.index({ user: 1, status: 1 });
 LeadSchema.index({ user: 1, priority: 1 });
 LeadSchema.index({ companyName: 'text', contactName: 'text', email: 'text' });
 
-// Virtual for lead score calculation
-LeadSchema.virtual('score').get(function() {
-  let score = 0;
-
-  // Base score from metadata confidence
-  if (this.metadata?.confidence) {
-    score += this.metadata.confidence * 0.4;
-  }
-
-  // Priority multiplier
-  switch (this.priority) {
-    case 'high': score *= 1.3; break;
-    case 'medium': score *= 1.1; break;
-    case 'low': score *= 0.9; break;
-  }
-
-  // Status multiplier
-  switch (this.status) {
-    case 'converted': score *= 1.5; break;
-    case 'qualified': score *= 1.2; break;
-    case 'contacted': score *= 1.1; break;
-    case 'new': score *= 1.0; break;
-    case 'rejected': score *= 0.5; break;
-  }
-
-  return Math.round(score);
-});
-
 // Update outreach stats when status changes
-LeadSchema.pre('save', function(next) {
+LeadSchema.pre('save', function (next) {
   if (this.isModified('status') && this.status === 'contacted') {
     this.outreach.lastContacted = new Date();
   }

@@ -1,38 +1,112 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
 
 const Admin: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (user.role !== 'admin') {
+      navigate('/dashboard');
+      return;
+    }
+    fetchUsers();
+  }, [user, navigate]);
 
-  if (user.role !== 'admin') {
-    navigate('/dashboard');
-    return null;
-  }
+  const fetchUsers = async () => {
+    try {
+      // Mock fetching users - in real app this would be an API call
+      // Since we don't have a user management API yet, we'll just show the current user
+      // and maybe some mock data if needed.
+      // For now, let's just simulate a delay.
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // In a real implementation, you'd fetch from /api/users
+      setUsers([
+        {
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          createdAt: new Date().toISOString()
+        }
+      ]);
+    } catch (error) {
+      toast.error('Failed to fetch users');
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!user || user.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Manage users and system settings.</p>
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>Admin Panel</CardTitle>
+            <CardTitle>Users</CardTitle>
             <CardDescription>
-              Manage users, subscriptions, and system settings
+              A list of all registered users.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p>Admin panel interface coming soon...</p>
-            <Button onClick={() => navigate('/dashboard')} className="mt-4">
-              Back to Dashboard
-            </Button>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((u) => (
+                    <TableRow key={u._id}>
+                      <TableCell className="font-medium">{u.name}</TableCell>
+                      <TableCell>{u.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>
+                          {u.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

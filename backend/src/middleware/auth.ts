@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
+import { MockUser } from '../models/MockUser';
+import { isConnected } from '../utils/database';
 
 // Extend Request interface to include user
 declare global {
@@ -28,7 +30,8 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
 
       // Get user from token
-      req.user = await User.findById(decoded.id).select('-password');
+      const UserModel = isConnected ? User : MockUser;
+      req.user = await UserModel.findById(decoded.id);
 
       if (!req.user) {
         return res.status(401).json({

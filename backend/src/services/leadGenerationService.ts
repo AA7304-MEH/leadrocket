@@ -51,7 +51,7 @@ export class LeadGenerationService {
       throw new Error('Google AI not initialized');
     }
 
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = `
       Generate ${count} realistic B2B leads for a lead generation SaaS platform.

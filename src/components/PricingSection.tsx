@@ -7,28 +7,42 @@ import { Check } from "lucide-react";
 
 const plans = [
   {
-    name: "Pro",
-    price: 997,
+    name: "Starter",
+    price: 49,
     period: "month",
-    description: "Perfect for growing businesses",
+    description: "For individuals just starting out",
     badge: "Start 14-Day Free Trial",
     features: [
-      "50 verified leads per week",
+      "20 verified leads per week",
+      "Basic outreach sequences",
+      "Email support",
+      "Export to CSV",
+      "Basic lead scoring"
+    ]
+  },
+  {
+    name: "Pro",
+    price: 199,
+    period: "month",
+    description: "Perfect for growing businesses",
+    badge: "Most Popular",
+    popular: true,
+    features: [
+      "100 verified leads per week",
       "AI-powered outreach sequences",
       "CRM sync (HubSpot, Salesforce)",
       "Intent signal monitoring",
-      "Email & chat support"
+      "Priority email & chat support"
     ]
   },
   {
     name: "Enterprise",
-    price: 2497,
+    price: 499,
     period: "month",
     description: "For scaling teams and agencies",
-    badge: "Most Popular",
-    popular: true,
+    badge: "Best Value",
     features: [
-      "150 verified leads per week",
+      "300 verified leads per week",
       "Dedicated account manager",
       "Custom integrations",
       "Advanced analytics dashboard",
@@ -52,19 +66,18 @@ export const PricingSection = () => {
             Choose the plan that fits your business. All plans include our 50-lead guarantee.
           </p>
         </div>
-        
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+
+        {/* Pricing plans temporarily hidden
+        <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {plans.map((plan, index) => (
-            <Card 
-              key={index} 
-              className={`group relative bg-gradient-card shadow-elegant hover:shadow-floating transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 border animate-slide-up overflow-hidden ${
-                plan.popular ? 'ring-2 ring-primary/50 border-primary/20 shadow-glow' : 'border-primary/10'
-              }`}
+            <Card
+              key={index}
+              className={`group relative bg-gradient-card shadow-elegant hover:shadow-floating transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 border animate-slide-up overflow-hidden ${plan.popular ? 'ring-2 ring-primary/50 border-primary/20 shadow-glow' : 'border-primary/10'
+                }`}
               style={{ animationDelay: `${index * 0.2}s` }}
             >
-              {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
+
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
                   <Badge className="bg-gradient-primary text-primary-foreground px-6 py-2 shadow-glow animate-pulse-glow">
@@ -72,7 +85,7 @@ export const PricingSection = () => {
                   </Badge>
                 </div>
               )}
-              
+
               <CardHeader className="text-center pb-8">
                 <CardTitle className="text-2xl font-bold">
                   {plan.name}
@@ -88,7 +101,7 @@ export const PricingSection = () => {
                   {plan.badge}
                 </Badge>
               </CardHeader>
-              
+
               <CardContent>
                 <ul className="space-y-4 mb-8">
                   {plan.features.map((feature, featureIndex) => (
@@ -98,14 +111,13 @@ export const PricingSection = () => {
                     </li>
                   ))}
                 </ul>
-                
+
                 <Link to={isAuthenticated ? "/dashboard" : "/register"}>
                   <Button
-                    className={`w-full ${
-                      plan.popular
+                    className={`w-full ${plan.popular
                         ? 'bg-gradient-primary hover:opacity-90'
                         : 'bg-gradient-primary hover:opacity-90'
-                    }`}
+                      }`}
                     size="lg"
                   >
                     {isAuthenticated ? "Go to Dashboard" : "Start Free Trial"}
@@ -115,6 +127,7 @@ export const PricingSection = () => {
             </Card>
           ))}
         </div>
+        */}
       </div>
     </section>
   );
