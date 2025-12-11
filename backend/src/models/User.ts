@@ -150,7 +150,7 @@ UserSchema.pre('save', async function (next) {
   }
 
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  (this as any).password = await bcrypt.hash((this as any).password, salt);
 });
 
 // Sign JWT and return
@@ -160,7 +160,7 @@ UserSchema.methods.getSignedJwtToken = function (): string {
     process.env.JWT_SECRET as string,
     {
       expiresIn: process.env.JWT_EXPIRE || '7d'
-    }
+    } as any
   );
 };
 
@@ -171,7 +171,7 @@ UserSchema.methods.getRefreshToken = function (): string {
     process.env.JWT_REFRESH_SECRET as string,
     {
       expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d'
-    }
+    } as any
   );
 };
 

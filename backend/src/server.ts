@@ -19,6 +19,15 @@ import adminRoutes from './routes/admin';
 import analyticsRoutes from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
+import aiRoutes from './routes/aiRoutes';
+import deliverabilityRoutes from './routes/deliverabilityRoutes';
+import verifyRoutes from './routes/verifyRoutes';
+import campaignRoutes from './routes/campaignRoutes';
+import replyRoutes from './routes/replyRoutes';
+import doctorRoutes from './routes/doctorRoutes';
+import coachingRoutes from './routes/coachingRoutes';
+import integrationRoutes from './routes/integrationRoutes';
+import complianceRoutes from './routes/complianceRoutes';
 
 dotenv.config();
 
@@ -75,6 +84,15 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/deliverability', deliverabilityRoutes);
+app.use('/api/verify', verifyRoutes);
+app.use('/api/campaigns', campaignRoutes);
+app.use('/api/analyze', replyRoutes);
+app.use('/api/ai/doctor', doctorRoutes);
+app.use('/api/coaching', coachingRoutes);
+app.use('/api/integrations', integrationRoutes);
+app.use('/api/compliance', complianceRoutes);
 
 // Error handling middleware
 app.use(notFound);

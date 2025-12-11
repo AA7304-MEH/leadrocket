@@ -10,7 +10,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     const { name, email, password } = req.body;
 
     // Check if user exists
-    const UserModel = isConnected ? User : MockUser;
+    const UserModel: any = isConnected ? User : MockUser;
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -62,7 +62,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     if (isConnected) {
       user = await User.findOne({ email }).select('+password');
     } else {
-      user = await MockUser.findOne({ email });
+      user = await (MockUser as any).findOne({ email });
     }
 
     if (!user) {
@@ -124,7 +124,7 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
 
     // Get user
-    const UserModel = isConnected ? User : MockUser;
+    const UserModel: any = isConnected ? User : MockUser;
     const user = await UserModel.findById(decoded.id);
     if (!user) {
       return res.status(401).json({
@@ -168,7 +168,7 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
 // Get current logged in user
 export const getMe = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const UserModel = isConnected ? User : MockUser;
+    const UserModel: any = isConnected ? User : MockUser;
     const user = await UserModel.findById(req.user.id);
 
     res.status(200).json({

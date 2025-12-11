@@ -24,7 +24,8 @@ import {
   Copy,
   Eye,
   Pencil,
-  Trash2
+  Trash2,
+  ShieldAlert
 } from 'lucide-react';
 import { leadService } from '@/services/leadService';
 import { Lead } from '@/types';
@@ -549,6 +550,25 @@ const Leads: React.FC = () => {
                             >
                               <Mail className="h-4 w-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  toast.info("Enriching lead...");
+                                  await fetch(`/api/leads/${lead._id}/enrich`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+                                  toast.success("Lead enriched!");
+                                  fetchLeads();
+                                } catch (err) {
+                                  toast.error("Failed to enrich");
+                                }
+                              }}
+                              title="Enrich & Predict Score"
+                            >
+                              <Sparkles className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -620,6 +640,62 @@ const Leads: React.FC = () => {
                                     {isDrafting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                                     Draft Cold Email
                                   </Button>
+                                </div>
+                                <div className="mt-4">
+                                  <h4 className="flex items-center font-semibold text-primary mb-2">
+                                    <ShieldAlert className="h-4 w-4 mr-2" />
+                                    Competitor Intel
+                                  </h4>
+                                  <div className={`p-3 rounded-md border shadow-sm ${lead.competitorInsights ? 'bg-red-50 border-red-200' : 'bg-white'}`}>
+                                    {lead.competitorInsights ? (
+                                      <div className="space-y-2">
+                                        <div className="flex justify-between items-center text-red-800">
+                                          <span className="text-sm font-bold">Detected: {lead.competitorInsights.detectedCompetitor}</span>
+                                          <span className="text-[10px] uppercase">Active recently</span>
+                                        </div>
+                                        <p className="text-xs text-red-600">"{lead.competitorInsights.detectedTemplate}"</p>
+                                        <div className="bg-white/50 p-2 rounded text-xs text-red-900 border border-red-100">
+                                          <strong>Counter Strategy:</strong> {lead.competitorInsights.counterStrategy}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="text-center">
+                                        <p className="text-xs text-muted-foreground mb-2">No active threats detected.</p>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="w-full text-xs h-7"
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            const text = prompt("Paste email/message content to scan:");
+                                            if (!text) return;
+                                            try {
+                                              toast.info("Scanning for competitors...");
+                                              const res = await fetch(`/api/leads/${lead._id}/analyze-competitors`, {
+                                                method: 'POST',
+                                                headers: {
+                                                  'Content-Type': 'application/json',
+                                                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                                },
+                                                body: JSON.stringify({ text })
+                                              });
+                                              const data = await res.json();
+                                              if (data.competitorFound) {
+                                                toast.error(`Alert: ${data.insight.name} detected!`);
+                                              } else {
+                                                toast.success("No competitors found.");
+                                              }
+                                              fetchLeads();
+                                            } catch (err) {
+                                              toast.error("Scan failed");
+                                            }
+                                          }}
+                                        >
+                                          Scan Content
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>

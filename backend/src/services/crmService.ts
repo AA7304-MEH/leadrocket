@@ -131,7 +131,7 @@ export class CRMService {
 
       return {
         success: true,
-        webhookId: result.id || `webhook_${Date.now()}`,
+        webhookId: (result as any).id || `webhook_${Date.now()}`,
         message: 'Lead synced to custom CRM successfully'
       };
     } catch (error) {

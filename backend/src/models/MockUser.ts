@@ -121,10 +121,10 @@ export class MockUser {
     getSignedJwtToken(): string {
         return jwt.sign(
             { id: this._id, email: this.email },
-            process.env.JWT_SECRET || 'secret',
+            (process.env.JWT_SECRET || 'secret') as string,
             {
                 expiresIn: process.env.JWT_EXPIRE || '7d'
-            }
+            } as any
         );
     }
 
@@ -134,7 +134,7 @@ export class MockUser {
             process.env.JWT_REFRESH_SECRET || 'refreshsecret',
             {
                 expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d'
-            }
+            } as any
         );
     }
 

@@ -3,6 +3,8 @@ import Lead from '../models/Lead';
 import { MockLead } from '../models/MockLead';
 import { isConnected } from '../utils/database';
 import { AuthRequest } from '../middleware/auth';
+import { PredictiveService } from '../services/predictiveService';
+import { CompetitiveService } from '../services/competitiveService';
 
 // Get all leads for user
 export const getLeads = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
@@ -29,7 +31,7 @@ export const getLeads = async (req: AuthRequest, res: Response, next: NextFuncti
       query.$text = { $search: req.query.search };
     }
 
-    const LeadModel = isConnected ? Lead : MockLead;
+    const LeadModel: any = isConnected ? Lead : MockLead;
     const leads = await LeadModel.find(query)
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -56,7 +58,7 @@ export const getLeads = async (req: AuthRequest, res: Response, next: NextFuncti
 // Get single lead
 export const getLead = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const LeadModel = isConnected ? Lead : MockLead;
+    const LeadModel: any = isConnected ? Lead : MockLead;
     const lead = await LeadModel.findById(req.params.id);
 
     if (!lead) {
@@ -93,7 +95,7 @@ export const createLead = async (req: AuthRequest, res: Response, next: NextFunc
       source: req.body.source || 'manual'
     };
 
-    const LeadModel = isConnected ? Lead : MockLead;
+    const LeadModel: any = isConnected ? Lead : MockLead;
     const lead = await LeadModel.create(leadData);
 
     res.status(201).json({
@@ -108,7 +110,7 @@ export const createLead = async (req: AuthRequest, res: Response, next: NextFunc
 // Update lead
 export const updateLead = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const LeadModel = isConnected ? Lead : MockLead;
+    const LeadModel: any = isConnected ? Lead : MockLead;
     let lead = await LeadModel.findById(req.params.id);
 
     if (!lead) {
@@ -147,7 +149,7 @@ export const updateLead = async (req: AuthRequest, res: Response, next: NextFunc
 // Delete lead
 export const deleteLead = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const LeadModel = isConnected ? Lead : MockLead;
+    const LeadModel: any = isConnected ? Lead : MockLead;
     const lead = await LeadModel.findById(req.params.id);
 
     if (!lead) {
@@ -204,7 +206,7 @@ export const generateLeads = async (req: AuthRequest, res: Response, next: NextF
           priority: 'medium',
           source: 'ai_generated'
         };
-        const LeadModel = isConnected ? Lead : MockLead;
+        const LeadModel: any = isConnected ? Lead : MockLead;
         const lead = await LeadModel.create(leadData);
         generatedLeads.push(lead);
       }
@@ -270,7 +272,7 @@ export const generateLeads = async (req: AuthRequest, res: Response, next: NextF
       }
 
       const data = await response.json();
-      let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      let text = (data as any).candidates?.[0]?.content?.parts?.[0]?.text || '';
 
       // Clean up markdown if present
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -322,7 +324,7 @@ export const generateLeads = async (req: AuthRequest, res: Response, next: NextF
           scoreReason: item.scoreReason || 'AI generated lead'
         };
 
-        const LeadModel = isConnected ? Lead : MockLead;
+        const LeadModel: any = isConnected ? Lead : MockLead;
         const lead = await LeadModel.create(leadData);
         generatedLeads.push(lead);
       }
@@ -353,7 +355,7 @@ export const generateLeads = async (req: AuthRequest, res: Response, next: NextF
 // Draft Email
 export const draftEmail = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const LeadModel = isConnected ? Lead : MockLead;
+    const LeadModel: any = isConnected ? Lead : MockLead;
     const lead = await LeadModel.findById(req.params.id);
 
     if (!lead) {
@@ -416,7 +418,7 @@ export const draftEmail = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     const data = await response.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let text = (data as any).candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     // Clean up markdown
     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -440,4 +442,94 @@ export const draftEmail = async (req: AuthRequest, res: Response, next: NextFunc
   } catch (error) {
     next(error);
   }
+};
+
+
+// Get Top Priority Leads
+export const getTopPriorityLeads = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+  try {
+    const LeadModel: any = isConnected ? Lead : MockLead;
+
+    // In a real scenario we would filter by user and sort by nested field
+    // MockLead might behave differently, so we fetch and sort in memory if needed for mock
+    // But Mongoose supports dot notation sort
+    const leads = await LeadModel.find({ user: req.user.id })
+      .sort({ 'predictive.score': -1 })
+      .limit(20);
+
+    res.status(200).json({
+      success: true,
+      count: leads.length,
+      data: leads
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Enrich Lead (Calculate Score)
+export const enrichLead = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+  try {
+    const LeadModel: any = isConnected ? Lead : MockLead;
+    const lead = await LeadModel.findById(req.params.id);
+
+    if (!lead) {
+      return res.status(404).json({ success: false, error: 'Lead not found' });
+    }
+
+    // Manual enrichment trigger (simulating API call to Clearbit/PeopleDataLabs)
+    // We update the enrichment fields with some mock data if empty
+    if (!lead.enrichment?.companySize) {
+      lead.enrichment = {
+        companySize: '50-200 employees',
+        funding: Math.random() > 0.5 ? 'Series B' : 'Seed',
+        linkedinActivity: Math.random() > 0.5 ? 'High' : 'Low',
+        webTraffic: 'Moderate'
+      };
+    }
+
+    // Calculate Score
+    const prediction = PredictiveService.scoreLead(lead);
+
+    lead.predictive = prediction;
+    lead.score = prediction.score; // Sync with legacy field if needed
+    lead.scoreReason = prediction.reason;
+
+    await lead.save();
+
+    res.status(200).json({
+      success: true,
+      data: lead,
+      prediction
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const analyzeCompetitors = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+  try {
+    const LeadModel: any = isConnected ? Lead : MockLead;
+    const lead = await LeadModel.findById(req.params.id);
+
+    if (!lead) {
+      return res.status(404).json({ success: false, error: 'Lead not found' });
+    }
+
+    const { text } = req.body;
+    if (text) {
+      const result = CompetitiveService.detectCompetitor(text);
+      if (result) {
+        lead.competitorInsights = {
+          detectedCompetitor: result.name,
+          lastActivity: new Date(),
+          detectedTemplate: result.template,
+          counterStrategy: result.strategy
+        };
+        await lead.save();
+      }
+    }
+
+    res.status(200).json({ success: true, data: lead });
+  } catch (error) { next(error); }
 };

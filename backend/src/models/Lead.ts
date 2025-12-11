@@ -26,6 +26,23 @@ export interface ILead extends Document {
     funding?: string;
     revenue?: string;
   };
+  enrichment?: {
+    companySize?: string;
+    funding?: string;
+    linkedinActivity?: string;
+    webTraffic?: string;
+  };
+  predictive?: {
+    score: number;
+    reason: string;
+    probability: 'Low' | 'Medium' | 'High';
+  };
+  competitorInsights?: {
+    detectedCompetitor?: string;
+    lastActivity?: Date;
+    detectedTemplate?: string;
+    counterStrategy?: string;
+  };
   crmData?: {
     hubspotId?: string;
     salesforceId?: string;
@@ -139,6 +156,23 @@ const LeadSchema: Schema = new Schema({
     lastContacted: Date,
     nextFollowUp: Date
   },
+  enrichment: {
+    companySize: String,
+    funding: String,
+    linkedinActivity: String,
+    webTraffic: String
+  },
+  predictive: {
+    score: { type: Number, default: 0 },
+    reason: String,
+    probability: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' }
+  },
+  competitorInsights: {
+    detectedCompetitor: String,
+    lastActivity: Date,
+    detectedTemplate: String,
+    counterStrategy: String
+  },
   score: {
     type: Number,
     default: 0,
@@ -168,7 +202,7 @@ LeadSchema.index({ companyName: 'text', contactName: 'text', email: 'text' });
 // Update outreach stats when status changes
 LeadSchema.pre('save', function (next) {
   if (this.isModified('status') && this.status === 'contacted') {
-    this.outreach.lastContacted = new Date();
+    (this as any as ILead).outreach.lastContacted = new Date();
   }
   next();
 });

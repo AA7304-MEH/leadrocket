@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AnalyticsService } from '../services/analyticsService';
+import Lead from '../models/Lead';
 
 // Get admin analytics
 export const getAdminAnalytics = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
@@ -63,10 +64,10 @@ export const getLeadPerformance = async (req: AuthRequest, res: Response, next: 
 
     // Get lead performance data
     const now = new Date();
-    const periodDays = AnalyticsService['parsePeriod'](period as string);
+    const periodDays = (AnalyticsService as any)['parsePeriod'](period as string);
     const startDate = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
 
-    const performance = await require('../models/Lead').default.aggregate([
+    const performance = await Lead.aggregate([
       { $match: { user: req.user._id, createdAt: { $gte: startDate } } },
       {
         $group: {
@@ -111,7 +112,7 @@ export const getLeadPerformance = async (req: AuthRequest, res: Response, next: 
 // Get industry insights
 export const getIndustryInsights = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const insights = await require('../models/Lead').default.aggregate([
+    const insights = await Lead.aggregate([
       { $match: { user: req.user._id } },
       {
         $group: {

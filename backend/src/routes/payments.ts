@@ -12,7 +12,7 @@ import { protect } from '../middleware/auth';
 const router = express.Router();
 
 // Public webhook endpoint (no auth required)
-router.post('/webhook', handleWebhook);
+router.post('/webhook', handleWebhook as any);
 
 // Protected routes
 router.use(protect);

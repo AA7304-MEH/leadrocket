@@ -12,6 +12,16 @@ import Leads from "./pages/Leads";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import Pricing from "./pages/Pricing";
+import CaseStudies from "./pages/CaseStudies";
+import Templates from "./pages/Templates";
+import Blog from "./pages/Blog";
+import Compare from "./pages/Compare";
+import About from "./pages/About";
+import Onboarding from "./pages/Onboarding";
+import Onboarding from "./pages/Onboarding";
+import CoachingDashboard from "./pages/CoachingDashboard";
+import IntegrationBuilder from "./pages/IntegrationBuilder";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +34,13 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/case-studies" element={<CaseStudies />} />
+            <Route path="/templates" element={<Templates />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/compare" element={<Compare />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
@@ -31,7 +48,9 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<Admin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="/coaching" element={<CoachingDashboard />} />
+            <Route path="/integrations/new" element={<IntegrationBuilder />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
