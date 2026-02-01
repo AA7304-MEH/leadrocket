@@ -1,3 +1,32 @@
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+} from "@/components/ui/carousel";
+
+import dashboardAnalytics from "@/assets/carousel/dashboard-analytics.png";
+import dashboardDataviz from "@/assets/carousel/dashboard-dataviz.png";
+import teamCollaboration from "@/assets/carousel/team-collaboration.png";
+
+const demoImages = [
+    {
+        src: dashboardAnalytics,
+        alt: "Dashboard Overview",
+        caption: "Comprehensive Analytics Dashboard"
+    },
+    {
+        src: dashboardDataviz,
+        alt: "Data Visualization",
+        caption: "Real-time Data Visualization"
+    },
+    {
+        src: teamCollaboration,
+        alt: "Team Collaboration",
+        caption: "Seamless Team Collaboration"
+    }
+];
 
 const VideoDemo = () => {
     return (
@@ -5,27 +34,38 @@ const VideoDemo = () => {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                        See How Easy It Is in 90 Seconds
+                        Explore the Platform
                     </h2>
                     <p className="mt-4 text-lg text-gray-600">
-                        No credit card required. Start free trial after watching.
+                        Take a closer look at our powerful features and intuitive interface.
                     </p>
                 </div>
-                <div className="relative mx-auto max-w-4xl aspect-video rounded-2xl overflow-hidden shadow-2xl bg-gray-900">
-                    {/* Placeholder for video - in real app, replace with iframe */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 hover:bg-white/30 transition-colors cursor-pointer group">
-                                <div className="w-0 h-0 border-t-[15px] border-t-transparent border-l-[25px] border-l-white border-b-[15px] border-b-transparent ml-2 group-hover:scale-110 transition-transform"></div>
-                            </div>
-                            <p className="text-white font-medium">Click to Play Demo</p>
-                        </div>
-                    </div>
-                    <img
-                        src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=2000"
-                        alt="Dashboard Preview"
-                        className="w-full h-full object-cover opacity-50"
-                    />
+
+                <div className="relative mx-auto max-w-5xl">
+                    <Carousel className="w-full">
+                        <CarouselContent>
+                            {demoImages.map((image, index) => (
+                                <CarouselItem key={index}>
+                                    <div className="p-1">
+                                        <div className="overflow-hidden rounded-2xl shadow-2xl bg-gray-900 border border-gray-200">
+                                            <div className="relative aspect-video">
+                                                <img
+                                                    src={image.src}
+                                                    alt={image.alt}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-4 text-white text-center">
+                                                    <p className="font-medium text-lg">{image.caption}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                        <CarouselPrevious className="left-4 bg-white/10 hover:bg-white/20 text-white border-none" />
+                        <CarouselNext className="right-4 bg-white/10 hover:bg-white/20 text-white border-none" />
+                    </Carousel>
                 </div>
             </div>
         </section>
