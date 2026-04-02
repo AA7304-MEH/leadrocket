@@ -1,8 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import User from '../models/User';
-import { MockUser } from '../models/MockUser';
-import { isConnected } from '../utils/database';
+import mockUserStore from '../utils/mockUserStore';
 
 // Extend Request interface to include user
 declare global {
@@ -22,37 +20,42 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
   let token;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      // Get token from header
-      token = req.headers.authorization.split(' ')[1];
-
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-
-      // Get user from token
-      const UserModel = isConnected ? User : MockUser;
-      req.user = await UserModel.findById(decoded.id);
-
-      if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Not authorized, user not found'
-        });
-      }
-
-      next();
-    } catch (error) {
-      return res.status(401).json({
-        success: false,
-        error: 'Not authorized, token failed'
-      });
-    }
+    // Get token from header
+    token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies && req.cookies.accessToken) {
+    // Get token from cookie
+    token = req.cookies.accessToken;
   }
 
   if (!token) {
     return res.status(401).json({
       success: false,
       error: 'Not authorized, no token'
+    });
+  }
+
+  try {
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+    // Get user from mock store
+    const user = await mockUserStore.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authorized, user not found'
+      });
+    }
+
+    req.user = user;
+
+    next();
+  } catch (error) {
+    console.error(error);
+    return res.status(401).json({
+      success: false,
+      error: 'Not authorized, token failed'
     });
   }
 };
@@ -88,7 +91,7 @@ export const resourceOwnerOrAdmin = (resourceUserIdField: string = 'user') => {
       });
     }
 
-    if (req.user.role === 'admin' || req.user._id.toString() === req.body[resourceUserIdField]?.toString()) {
+    if (req.user.role === 'admin' || req.user.id === req.body[resourceUserIdField]) {
       next();
     } else {
       return res.status(403).json({

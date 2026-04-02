@@ -1,0 +1,232 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("user") // user, admin
+
+  // Subscription (Simplified on User)
+  subscriptionPlan   String @default("pro") // pro, enterprise
+  subscriptionStatus String @default("trial") // active, cancelled, expired, trial, past_due, unpaid
+  stripeCustomerId   String?
+  trialEndsAt        DateTime?
+
+  // Profile
+  company  String?
+  website  String?
+  industry String?
+  phone    String?
+  avatar   String?
+
+  // Settings
+  emailNotifications Boolean @default(true)
+  weeklyReports      Boolean @default(true)
+  timezone           String  @default("UTC")
+
+  // API Keys
+  openaiKey     String?
+  hubspotKey    String?
+  salesforceKey String?
+  apiKeys       String? // JSON string
+
+  // Usage
+  leadsGenerated Int @default(0)
+  leadsThisMonth Int @default(0)
+  monthlyLimit   Int @default(50)
+
+  isActive  Boolean   @default(true)
+  lastLogin DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  subscription Subscription?
+  leads        Lead[]
+  campaigns    Campaign[]
+  workflows    Workflow[]
+
+  // Viral Growth Relations
+  referrals     Referral[] @relation("Referrer")
+  referralCode  ReferralCode?
+  rewards       Reward[]
+  gameStats     GameStats?
+}
+
+model Subscription {
+  id                   String  @id @default(uuid())
+  user                 User    @relation(fields: [userId], references: [id])
+  userId               String  @unique
+  stripeSubscriptionId String? @unique
+  stripeCustomerId     String
+  plan                 String // pro, enterprise
+  status               String  @default("trial") // active, cancelled, expired, trial, past_due, unpaid
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  trialStart         DateTime?
+  trialEnd           DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  cancelledAt        DateTime?
+
+  // Billing
+  billingInterval String  @default("month") // month, year
+  billingAmount   Int
+  billingCurrency String  @default("usd")
+
+  // Features (JSON string)
+  features String?
+
+  // Usage
+  leadsThisMonth Int @default(0)
+  monthlyLimit   Int @default(50)
+
+  metadata String? // JSON string
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lead {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  companyName String
+  contactName String?
+  email       String?
+  phone       String?
+  website     String?
+  industry    String?
+  companySize String?
+  location    String?
+  linkedinUrl String?
+  
+  painPoints String? // JSON array string
+  salesPitch String?
+  
+  source   String // ai_generated, manual, import, api
+  status   String // new, contacted, qualified, converted, rejected
+  priority String // low, medium, high
+  
+  tags  String? // JSON array string
+  notes String?
+
+  // Complex nested objects -> JSON strings
+  metadata           String?
+  enrichment         String?
+  predictive         String?
+  competitorInsights String?
+  crmData            String?
+  outreach           String?
+
+  score       Int     @default(0)
+  scoreReason String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Campaign {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  name         String
+  status       String   @default("draft") // draft, active, paused, completed
+  type         String   @default("email")
+  sequenceFlow String? // JSON string
+  metrics      String? // JSON string
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Workflow {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  name    String
+  trigger String // new_lead, etc.
+  nodes   String? // JSON string
+  edges   String? // JSON string
+  
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- VIRAL GROWTH ENGINE MODELS ---
+
+model ReferralCode {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  code      String   @unique
+  invites   Int      @default(0)
+  clicks    Int      @default(0)
+  earnings  Float    @default(0.0) // Total earnings from referrals
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Referral {
+  id          String   @id @default(uuid())
+  referrer    User     @relation("Referrer", fields: [referrerId], references: [id])
+  referrerId  String
+  
+  invitedEmail String
+  invitedId    String? // Populated when they sign up
+  
+  status      String   @default("pending") // pending, joined, converted
+  reward      String?  // JSON string describing reward
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Reward {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  
+  type      String   // credits, commissioning, feature_unlock
+  amount    Int      // For credits
+  value     Float?   // For commission ($)
+  
+  status    String   @default("pending") // pending, redeemed, paid
+  
+  source    String   // referral, achievement, daily_login
+  
+  createdAt DateTime @default(now())
+}
+
+model GameStats {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  
+  level     Int      @default(1)
+  xp        Int      @default(0)
+  
+  streakCurrent Int  @default(0)
+  streakBest    Int  @default(0)
+  lastActivity  DateTime @default(now())
+  
+  achievements  String? // JSON array of unlocked achievement IDs
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

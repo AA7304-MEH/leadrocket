@@ -1,51 +1,67 @@
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
-import HealthScore from "@/components/dashboard/HealthScore";
-import ReplyRateChart from "@/components/dashboard/ReplyRateChart";
-import TopTemplates from "@/components/dashboard/TopTemplates";
-import LeadOfDay from "@/components/dashboard/LeadOfDay";
+// Widget imports
+import CampaignPerformance from "@/components/dashboard/CampaignPerformance";
+import AICopilot from "@/components/dashboard/AICopilot";
+import LeadIntelligenceHub from "@/components/dashboard/LeadIntelligenceHub";
+import EngagementOpportunities from "@/components/dashboard/EngagementOpportunities";
+import ActivityFeed from "@/components/dashboard/ActivityFeed";
+import TemplatesWidget from "@/components/dashboard/TemplatesWidget";
 import QuickActions from "@/components/dashboard/QuickActions";
-import { TopPriorityLeads } from "@/components/dashboard/TopPriorityLeads";
-import { CompetitorAlert } from "@/components/dashboard/CompetitorAlert";
-import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
+import PlanUsage from "@/components/dashboard/PlanUsage";
+import PerformanceGoals from "@/components/dashboard/PerformanceGoals";
+import { RemixWidget } from "@/components/ai/RemixWidget";
+import { HealthScoreWidget } from "@/components/ai/HealthScoreWidget";
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back, Founder 👋</h1>
-          <p className="text-gray-500">Here's what's happening with your campaigns today.</p>
-        </div>
-        <div className="flex gap-4">
-          <Button variant="outline" size="icon">
-            <Bell className="w-4 h-4" />
-          </Button>
-          <Button>+ New Campaign</Button>
-        </div>
+    <DashboardLayout>
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-500">Overview of your cold email performance.</p>
       </div>
 
-      {/* Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Row 1 */}
-        <HealthScore score={92} />
-        <ReplyRateChart />
-        <div className="space-y-6">
-          <TopPriorityLeads />
-          <LeadOfDay />
+      {/* Main Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {/* Left Column - Primary Content (8 cols) */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Campaign Performance - Full Width */}
+          <CampaignPerformance />
+
+          {/* Two Column Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <LeadIntelligenceHub />
+            <EngagementOpportunities />
+          </div>
+
+          {/* AI Tools Row */}
+          <div className="grid grid-cols-1 gap-6">
+            <RemixWidget />
+          </div>
+
+          {/* Templates & Activity Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TemplatesWidget />
+            <ActivityFeed />
+          </div>
+        </div>
+
+        {/* Right Column - AI Copilot & Sidebar (4 cols) */}
+        <div className="lg:col-span-4 space-y-6">
+          <AICopilot />
+          <HealthScoreWidget />
           <QuickActions />
+          <PlanUsage />
         </div>
 
-        {/* Row 2 (if any, or expanding previous col) */}
-        <div className="md:col-span-2 lg:col-span-1">
-          <TopTemplates />
-        </div>
-        <div className="md:col-span-2 lg:col-span-1">
-          <CompetitorAlert />
+        {/* Full Width Footer Row */}
+        <div className="lg:col-span-12">
+          <PerformanceGoals />
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

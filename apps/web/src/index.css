@@ -1,0 +1,95 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 7%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 12%;
+    --input: 0 0% 6%;
+    --ring: 217 91% 60%;
+    --radius: 12px;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border selection:bg-primary/30;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tighter;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-2xl;
+  }
+  
+  .premium-card {
+    @apply bg-[#111111] border border-[#1F1F1F] rounded-[12px] transition-all duration-300;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-2 px-6 rounded-lg 
+           hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border border-[#2A2A2A] text-white font-bold py-2 px-6 rounded-lg 
+           hover:bg-white/5 hover:border-[#3B82F6] transition-all;
+  }
+
+  .input-premium {
+    @apply bg-[#0F0F0F] border-[#2A2A2A] text-white focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] 
+           rounded-lg transition-all placeholder:text-slate-600;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  
+  .bg-grid-white {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.02)'%3E%3Cpath d='M0 .5H31.5V32'/%3E%3C/svg%3E");
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Custom font loading if Cal Sans is used */
+@font-face {
+  font-family: 'Cal Sans';
+  src: url('https://cdn.jsdelivr.net/gh/fontsource/cal-sans@v1.0.0/fonts/cal-sans-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}

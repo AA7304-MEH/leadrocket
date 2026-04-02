@@ -6,9 +6,14 @@ interface User {
   email: string;
   role: 'user' | 'admin';
   subscription: {
-    plan: 'pro' | 'enterprise';
+    plan: string;
     status: 'active' | 'cancelled' | 'expired' | 'trial';
-    stripeCustomerId?: string;
+    payment_gateway?: 'razorpay' | 'paypal';
+    razorpay_payment_id?: string;
+    paypal_subscription_id?: string;
+    subscription_start?: string;
+    next_billing_date?: string;
+    plan_interval?: 'monthly' | 'annual';
     currentPeriodEnd?: string;
     trialEndsAt?: string;
   };

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "user_1769963500842_obxciiowv",
+    "name": "aditya mehra ",
+    "email": "aadityamehra289@gmail.com",
+    "password": "$2b$10$RqcDtc1UvBSHRqsg0U5ybedh95EbVzJOViGhQ1axEQK5eRBxfKO06",
+    "role": "user",
+    "subscriptionPlan": "pro",
+    "subscriptionStatus": "trial",
+    "leadsGenerated": 0,
+    "leadsThisMonth": 0,
+    "monthlyLimit": 50,
+    "isActive": true,
+    "lastLogin": "2026-02-01T16:31:40.882Z",
+    "createdAt": "2026-02-01T16:31:40.861Z",
+    "updatedAt": "2026-02-01T16:31:40.882Z"
+  },
+  {
+    "id": "admin_001",
+    "name": "Admin User",
+    "email": "admin@leadrockets.com",
+    "password": "$2b$10$dMhXv2pxwTTZJBjOfAv6UeAnBJKl5iEd1LnHs0a8NSWuZuoFU5Vbm",
+    "role": "admin",
+    "subscriptionPlan": "scale",
+    "subscriptionStatus": "active",
+    "leadsGenerated": 500,
+    "leadsThisMonth": 50,
+    "monthlyLimit": 10000,
+    "isActive": true,
+    "lastLogin": "2026-02-02T11:32:15.677Z",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-02-02T11:32:15.677Z"
+  },
+  {
+    "id": "user_1770031777284_p1056dvl7",
+    "name": "Demo User",
+    "email": "demo@leadrockets.com",
+    "password": "$2b$10$Au8LMEEthNCSlgS9gU4KlOrz1WnQuAPUYvJdTYwhVeq/sN8IyL10O",
+    "role": "user",
+    "subscriptionPlan": "pro",
+    "subscriptionStatus": "trial",
+    "leadsGenerated": 0,
+    "leadsThisMonth": 0,
+    "monthlyLimit": 50,
+    "isActive": true,
+    "lastLogin": "2026-02-02T11:29:37.309Z",
+    "createdAt": "2026-02-02T11:29:37.292Z",
+    "updatedAt": "2026-02-02T11:29:37.309Z"
+  }
+]

@@ -1,8 +1,68 @@
 import { Request, Response, NextFunction } from 'express';
-import User from '../models/User';
-import { MockUser } from '../models/MockUser';
-import { isConnected } from '../utils/database';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../middleware/auth';
+import mockUserStore from '../utils/mockUserStore';
+
+// Helper to sign JWT
+const getSignedJwtToken = (id: string, email: string) => {
+  return jwt.sign({ id, email }, process.env.JWT_SECRET!, {
+    expiresIn: (process.env.JWT_EXPIRE || '7d') as any
+  });
+};
+
+// Helper to get refresh token
+const getRefreshToken = (id: string, email: string) => {
+  return jwt.sign({ id, email }, process.env.JWT_REFRESH_SECRET!, {
+    expiresIn: (process.env.JWT_REFRESH_EXPIRE || '30d') as any
+  });
+};
+
+// Get token from model, create cookie and send response
+const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
+  // Create tokens
+  const accessToken = getSignedJwtToken(user.id, user.email);
+  const refreshToken = getRefreshToken(user.id, user.email);
+
+  const cookieOptions: any = {
+    exp: new Date(
+      Date.now() + parseInt(process.env.JWT_COOKIE_EXPIRE || '7') * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true
+  };
+
+  if (process.env.NODE_ENV === 'production') {
+    cookieOptions.secure = true;
+  }
+
+  res
+    .status(statusCode)
+    .cookie('accessToken', accessToken, cookieOptions)
+    .cookie('refreshToken', refreshToken, cookieOptions)
+    .json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          subscription: {
+            plan: user.subscriptionPlan,
+            status: user.subscriptionStatus
+          },
+          usage: {
+            leadsGenerated: user.leadsGenerated,
+            leadsThisMonth: user.leadsThisMonth,
+            monthlyLimit: user.monthlyLimit
+          },
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }
+      }
+    });
+};
 
 // Register user
 export const register = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
@@ -10,8 +70,8 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     const { name, email, password } = req.body;
 
     // Check if user exists
-    const UserModel: any = isConnected ? User : MockUser;
-    const existingUser = await UserModel.findOne({ email });
+    const existingUser = await mockUserStore.findByEmail(email);
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -20,35 +80,18 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     }
 
     // Create user
-    const user = await UserModel.create({
-      name,
-      email,
-      password
-    });
-
-    // Generate tokens
-    const accessToken = user.getSignedJwtToken();
-    const refreshToken = user.getRefreshToken();
+    const user = await mockUserStore.create({ name, email, password });
 
     // Update last login
-    await user.updateLastLogin();
+    await mockUserStore.updateLastLogin(user.id);
 
-    res.status(201).json({
-      success: true,
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          subscription: user.subscription
-        },
-        accessToken,
-        refreshToken
-      }
+    sendTokenResponse(user, 201, res);
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Registration failed'
     });
-  } catch (error) {
-    next(error);
   }
 };
 
@@ -58,12 +101,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     const { email, password } = req.body;
 
     // Check for user
-    let user;
-    if (isConnected) {
-      user = await User.findOne({ email }).select('+password');
-    } else {
-      user = await (MockUser as any).findOne({ email });
-    }
+    const user = await mockUserStore.findByEmail(email);
 
     if (!user) {
       return res.status(401).json({
@@ -73,7 +111,8 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     }
 
     // Check if password matches
-    const isMatch = await user.matchPassword(password);
+    const isMatch = await mockUserStore.verifyPassword(user, password);
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -81,38 +120,29 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       });
     }
 
-    // Generate tokens
-    const accessToken = user.getSignedJwtToken();
-    const refreshToken = user.getRefreshToken();
-
     // Update last login
-    await user.updateLastLogin();
+    await mockUserStore.updateLastLogin(user.id);
 
-    res.status(200).json({
-      success: true,
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          subscription: user.subscription
-        },
-        accessToken,
-        refreshToken
-      }
+    sendTokenResponse(user, 200, res);
+  } catch (error: any) {
+    console.error('Login error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Login failed'
     });
-  } catch (error) {
-    next(error);
   }
 };
 
 // Refresh access token
 export const refreshToken = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const { refreshToken } = req.body;
+    let token = req.body.refreshToken;
 
-    if (!refreshToken) {
+    if (!token && req.cookies && req.cookies.refreshToken) {
+      token = req.cookies.refreshToken;
+    }
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         error: 'Refresh token is required'
@@ -120,12 +150,11 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     }
 
     // Verify refresh token
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as any;
 
     // Get user
-    const UserModel: any = isConnected ? User : MockUser;
-    const user = await UserModel.findById(decoded.id);
+    const user = await mockUserStore.findById(decoded.id);
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -134,14 +163,27 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     }
 
     // Generate new access token
-    const accessToken = user.getSignedJwtToken();
+    const accessToken = getSignedJwtToken(user.id, user.email);
 
-    res.status(200).json({
-      success: true,
-      data: {
-        accessToken
-      }
-    });
+    const cookieOptions: any = {
+      exp: new Date(
+        Date.now() + parseInt(process.env.JWT_COOKIE_EXPIRE || '7') * 24 * 60 * 60 * 1000
+      ),
+      httpOnly: true
+    };
+
+    if (process.env.NODE_ENV === 'production') {
+      cookieOptions.secure = true;
+    }
+
+    res.status(200)
+      .cookie('accessToken', accessToken, cookieOptions)
+      .json({
+        success: true,
+        data: {
+          accessToken
+        }
+      });
   } catch (error) {
     return res.status(401).json({
       success: false,
@@ -153,13 +195,21 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
 // Logout user
 export const logout = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    // In a production app, you might want to blacklist the token
-    // For now, we'll just return success
-    res.status(200).json({
-      success: true,
-      data: {},
-      message: 'User logged out successfully'
-    });
+    res
+      .cookie('accessToken', 'none', {
+        expires: new Date(Date.now() + 10 * 1000),
+        httpOnly: true
+      })
+      .cookie('refreshToken', 'none', {
+        expires: new Date(Date.now() + 10 * 1000),
+        httpOnly: true
+      })
+      .status(200)
+      .json({
+        success: true,
+        data: {},
+        message: 'User logged out successfully'
+      });
   } catch (error) {
     next(error);
   }
@@ -168,12 +218,42 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
 // Get current logged in user
 export const getMe = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const UserModel: any = isConnected ? User : MockUser;
-    const user = await UserModel.findById(req.user.id);
+    const user = await mockUserStore.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
 
     res.status(200).json({
       success: true,
-      data: user
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        subscription: {
+          plan: user.subscriptionPlan,
+          status: user.subscriptionStatus
+        },
+        profile: {},
+        settings: {
+          emailNotifications: true,
+          weeklyReports: true,
+          timezone: 'UTC'
+        },
+        usage: {
+          leadsGenerated: user.leadsGenerated,
+          leadsThisMonth: user.leadsThisMonth,
+          monthlyLimit: user.monthlyLimit
+        },
+        isActive: user.isActive,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
     });
   } catch (error) {
     next(error);

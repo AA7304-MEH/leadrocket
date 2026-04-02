@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import * as Sentry from '@sentry/node';
@@ -28,6 +29,12 @@ import doctorRoutes from './routes/doctorRoutes';
 import coachingRoutes from './routes/coachingRoutes';
 import integrationRoutes from './routes/integrationRoutes';
 import complianceRoutes from './routes/complianceRoutes';
+import razorpayRoutes from './routes/razorpayRoutes';
+import abTestRoutes from './routes/abTestRoutes';
+import senderRoutes from './routes/senderRoutes';
+import growthRoutes from './routes/growthRoutes';
+import gamificationRoutes from './routes/gamificationRoutes';
+import aiRoutes from './routes/aiRoutes';
 
 dotenv.config();
 
@@ -61,12 +68,13 @@ app.use(compression());
 
 // CORS configuration
 app.use(cors({
-  origin: [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081'],
+  origin: [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:3000', 'http://localhost:3001'],
   credentials: true
 }));
 
 // Body parsing middleware
 app.use(express.json());
+app.use(cookieParser());
 app.use(morgan('dev'));
 
 // Routes
@@ -93,6 +101,12 @@ app.use('/api/ai/doctor', doctorRoutes);
 app.use('/api/coaching', coachingRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/compliance', complianceRoutes);
+app.use('/api/razorpay', razorpayRoutes);
+app.use('/api/ab-tests', abTestRoutes);
+app.use('/api/senders', senderRoutes);
+app.use('/api/growth', growthRoutes);
+app.use('/api/gamification', gamificationRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Error handling middleware
 app.use(notFound);
@@ -104,10 +118,9 @@ const startServer = async () => {
     // Try to connect to database but don't fail if it's not available
     try {
       await connectDB();
-      console.log('✅ Database connected successfully');
     } catch (dbError: any) {
       console.warn('⚠️ Database connection failed, running without database:', dbError.message);
-      console.log('💡 To enable database features, please start MongoDB');
+      console.log('💡 To enable database features, please check Supabase connection');
     }
 
     app.listen(PORT, () => {
