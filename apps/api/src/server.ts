@@ -19,6 +19,9 @@ import adminRoutes from './routes/admin';
 import analyticsRoutes from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
+// @ts-ignore
+import xss from 'xss-clean';
+import hpp from 'hpp';
 import aiRoutes from './routes/aiRoutes';
 import deliverabilityRoutes from './routes/deliverabilityRoutes';
 import verifyRoutes from './routes/verifyRoutes';
@@ -33,7 +36,6 @@ import abTestRoutes from './routes/abTestRoutes';
 import senderRoutes from './routes/senderRoutes';
 import growthRoutes from './routes/growthRoutes';
 import gamificationRoutes from './routes/gamificationRoutes';
-import aiRoutes from './routes/aiRoutes';
 
 dotenv.config();
 
@@ -73,7 +75,17 @@ app.use(cors({
 
 // Body parsing middleware
 app.use(express.json());
-app.use(morgan('dev'));
+
+// Dev logging middleware
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Data sanitization against XSS
+app.use(xss());
+
+// Prevent HTTP parameter pollution
+app.use(hpp());
 
 // Routes
 app.get('/health', (req, res) => {
@@ -104,7 +116,6 @@ app.use('/api/ab-tests', abTestRoutes);
 app.use('/api/senders', senderRoutes);
 app.use('/api/growth', growthRoutes);
 app.use('/api/gamification', gamificationRoutes);
-app.use('/api/ai', aiRoutes);
 
 // Error handling middleware
 app.use(notFound);

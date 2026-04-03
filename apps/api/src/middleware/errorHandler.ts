@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 
 export interface CustomError extends Error {
   statusCode?: number;
@@ -24,7 +24,7 @@ export const errorHandler = (
   }
 
   // Mongoose duplicate key
-  if (err.name === 'MongoError' && (err as any).code === 11000) {
+  if (err.name === 'MongoError' && (err.asAny as any).code === 11000) {
     const message = 'Duplicate field value entered';
     error = { ...error, message, statusCode: 400 };
   }
@@ -46,9 +46,15 @@ export const errorHandler = (
     error = { ...error, message, statusCode: 401 };
   }
 
-  return res.status(error.statusCode || 500).json({
+  // Final error response
+  const statusCode = error.statusCode || 500;
+  const message = error.message || 'Server Error';
+
+  return res.status(statusCode).json({
     success: false,
-    error: error.message || 'Server Error',
+    error: (process.env.NODE_ENV === 'production' && statusCode === 500) 
+      ? 'An internal server error occurred' 
+      : message,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 };

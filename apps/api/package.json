@@ -13,7 +13,6 @@
     "test:ci": "jest --ci --coverage --watchAll=false",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
     "prebuild": "npm run clean",
-    "postinstall": "npm run build",
     "docker:build": "docker build -t leadrockets-backend .",
     "docker:run": "docker run -p 5000:5000 --env-file .env leadrockets-backend",
     "deploy:railway": "railway up",
@@ -49,6 +48,9 @@
     "stripe": "^19.1.0"
   },
   "devDependencies": {
+    "@types/babel__generator": "^7.6.8",
+    "@types/babel__template": "^7.4.4",
+    "@types/babel__traverse": "^7.20.6",
     "@types/bcryptjs": "^3.0.0",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
@@ -58,7 +60,7 @@
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
-    "@types/node": "^24.7.2",
+    "@types/node": "^22.10.0",
     "@types/nodemailer": "^7.0.2",
     "@types/prop-types": "^15.7.15",
     "@types/supertest": "^6.0.3",
