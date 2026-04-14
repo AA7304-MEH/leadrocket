@@ -425,5 +425,3 @@ function TeamMember({ name, email, role }: { name: string, email: string, role: 
     </div>
   );
 }
-;
-}

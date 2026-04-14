@@ -16,7 +16,6 @@ interface CampaignsTableProps {
 export default function CampaignsTable({ campaigns, isLoading = false }: CampaignsTableProps) {
   const navigate = useNavigate();
 
-}
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
