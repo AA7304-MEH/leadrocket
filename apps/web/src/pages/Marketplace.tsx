@@ -222,25 +222,7 @@ export default function Marketplace() {
           {isLoading ? (
             <>
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-[400px] rounded-[2rem] bg-[#111] p-8 space-y-6 border border-white/5">
-                  <div className="flex justify-between">
-                    <Skeleton className="w-24 h-4" />
-                    <Skeleton className="w-12 h-6 rounded-full" />
-                  </div>
-                  <Skeleton className="w-full h-10" />
-                  <Skeleton className="w-2/3 h-4" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Skeleton className="h-16 rounded-2xl" />
-                    <Skeleton className="h-16 rounded-2xl" />
-                  </div>
-                  <div className="pt-4 flex justify-between">
-                    <Skeleton className="w-16 h-4" />
-                    <div className="flex gap-2">
-                      <Skeleton className="w-10 h-10 rounded-full" />
-                      <Skeleton className="w-24 h-10 rounded-xl" />
-                    </div>
-                  </div>
-                </div>
+                <Skeleton key={i} className="h-[400px] rounded-[2rem] border border-white/5" />
               ))}
             </>
           ) : filteredItems.length > 0 ? (

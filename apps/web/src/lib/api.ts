@@ -1,7 +1,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = '/api';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -94,6 +94,7 @@ export const campaignsApi = {
     launch: (id: string) => api.post(`/campaigns/${id}/launch`),
     pause: (id: string) => api.post(`/campaigns/${id}/pause`),
     resume: (id: string) => api.post(`/campaigns/${id}/resume`),
+    send: (id: string) => api.post(`/campaigns/${id}/send`),
     getStats: () => api.get<{ success: boolean; data: { total: number; active: number; sent: number; avgReplyRate: number } }>('/campaigns/stats'),
 };
 

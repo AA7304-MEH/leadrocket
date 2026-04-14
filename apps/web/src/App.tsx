@@ -1,19 +1,12 @@
-
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
 import { HelmetProvider } from 'react-helmet-async';
-import nprogress from 'nprogress';
-import 'nprogress/nprogress.css';
 import ErrorBoundary from './components/ErrorBoundary';
-import MobileNav from './components/layout/MobileNav';
+import ProtectedRoute from './components/ProtectedRoute';
 
-// NProgress Configuration
-nprogress.configure({ showSpinner: false, speed: 400, minimum: 0.1 });
-
-// Lazy load pages for LeadRockets 4.0
+// Lazy load pages
 const Landing = React.lazy(() => import('./pages/Landing'));
 const Auth = React.lazy(() => import('./pages/Auth'));
 const Onboarding = React.lazy(() => import('./pages/Onboarding'));
@@ -26,84 +19,58 @@ const Marketplace = React.lazy(() => import('./pages/Marketplace'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Growth = React.lazy(() => import('./pages/Growth'));
 const Billing = React.lazy(() => import('./pages/Billing'));
+const Debug = React.lazy(() => import('./pages/Debug'));
+const DashboardLayout = React.lazy(() => import('./components/layout/DashboardLayout'));
 
 const queryClient = new QueryClient();
-
-const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  useEffect(() => {
-    nprogress.start();
-    return () => {
-      nprogress.done();
-    };
-  }, []);
-
-  return <>{children}</>;
-};
-
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) return (
-    <div className="h-screen w-screen bg-[#0A0A0A] flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-
-  if (!user) return <Navigate to="/auth" />;
-
-  return <>{children}</>;
-};
-
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) return null;
-  if (user) return <Navigate to="/dashboard" />;
-  
-  return <>{children}</>;
-};
 
 const App: React.FC = () => {
   return (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <Router>
-          <AuthProvider>
-            <ErrorBoundary>
-              <React.Suspense fallback={
-                <div className="h-screen w-screen bg-[#0A0A0A] flex flex-col items-center justify-center space-y-6">
-                  <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-2xl shadow-blue-500/20" />
-                  <div className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-800 animate-pulse">
-                    LeadRockets 4.0
-                  </div>
+          <ErrorBoundary>
+            <React.Suspense fallback={
+              <div className="h-screen w-screen bg-[#0A0A0A] flex flex-col items-center justify-center space-y-6">
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-2xl shadow-blue-500/20" />
+                <div className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 animate-pulse">
+                  LeadRockets 4.0
                 </div>
-              }>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<PageWrapper><Landing /></PageWrapper>} />
-                  <Route path="/auth" element={<PublicRoute><PageWrapper><Auth /></PageWrapper></PublicRoute>} />
+              </div>
+            }>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/auth" element={<Auth />} />
+                
+                {/* Onboarding — auth required but separate from app shell */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/onboarding" element={<Onboarding />} />
+                </Route>
 
-                  {/* Protected Routes */}
-                  <Route path="/onboarding" element={<ProtectedRoute><PageWrapper><Onboarding /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/dashboard" element={<ProtectedRoute><PageWrapper><Dashboard /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/campaigns" element={<ProtectedRoute><PageWrapper><Campaigns /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/campaigns/new" element={<ProtectedRoute><PageWrapper><CampaignBuilder /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/campaigns/:id/edit" element={<ProtectedRoute><PageWrapper><CampaignBuilder /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/leads" element={<ProtectedRoute><PageWrapper><Leads /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><PageWrapper><Analytics /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/marketplace" element={<ProtectedRoute><PageWrapper><Marketplace /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute><PageWrapper><Settings /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/growth" element={<ProtectedRoute><PageWrapper><Growth /></PageWrapper></ProtectedRoute>} />
-                  <Route path="/billing" element={<ProtectedRoute><PageWrapper><Billing /></PageWrapper></ProtectedRoute>} />
+                {/* App routes — auth required + app shell */}
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<DashboardLayout />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/campaigns" element={<Campaigns />} />
+                    <Route path="/campaigns/new" element={<CampaignBuilder />} />
+                    <Route path="/campaigns/:id/edit" element={<CampaignBuilder />} />
+                    <Route path="/leads" element={<Leads />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/marketplace" element={<Marketplace />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/growth" element={<Growth />} />
+                    <Route path="/billing" element={<Billing />} />
+                    <Route path="/debug" element={<Debug />} />
+                  </Route>
+                </Route>
 
-                  {/* Catch-all */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-                <MobileNav />
-              </React.Suspense>
-              <Toaster position="top-right" richColors theme="dark" closeButton />
-            </ErrorBoundary>
-          </AuthProvider>
+                {/* Catch-all */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </React.Suspense>
+            <Toaster position="top-right" richColors theme="dark" closeButton />
+          </ErrorBoundary>
         </Router>
       </QueryClientProvider>
     </HelmetProvider>

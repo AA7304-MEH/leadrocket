@@ -275,4 +275,30 @@ export class EmailService {
 
     return this.sendEmail({ to: userEmail, subject, html });
   }
+
+  static async sendBulkEmails(leads: any[], campaign: any): Promise<{ sent: number; failed: number }> {
+    let sent = 0;
+    let failed = 0;
+    const sequenceFlow = typeof campaign.sequenceFlow === 'string' ? JSON.parse(campaign.sequenceFlow) : campaign.sequenceFlow;
+    const emailContent = sequenceFlow?.nodes?.[0]?.data?.content || `Hello, this is an automated message from ${campaign.name}.`;
+    const subject = campaign.name;
+
+    for (const lead of leads) {
+      if (!lead.email) {
+        failed++;
+        continue;
+      }
+      try {
+        let personalizedHtml = emailContent
+          .replace(/{{name}}/g, lead.contactName || 'there')
+          .replace(/{{company}}/g, lead.companyName || 'your company');
+        await this.sendEmail({ to: lead.email, subject: subject, html: personalizedHtml });
+        sent++;
+      } catch (error) {
+        console.error(`Failed to send email to ${lead.email}:`, error);
+        failed++;
+      }
+    }
+    return { sent, failed };
+  }
 }

@@ -1,0 +1,4 @@
+2026-04-09T13:28:44.158386Z  WARN turborepo_filewatch: failed to remove cookie file failed to remove file `D:\leadrockets\leadrockets\.turbo\cookies\.turbo-cookie`
+2026-04-09T13:28:46.550287Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-04-09T13:28:46.616277Z  WARN build:build_inner: turborepo_repository::package_graph::builder: Unable to calculate transitive closures: Missing version from non-workspace package: 'node_modules/@types/prop-types'
+2026-04-09T13:28:46.881139Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running

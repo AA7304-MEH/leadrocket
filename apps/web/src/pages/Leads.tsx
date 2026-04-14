@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { 
   Users, UserPlus, Upload, Search, Filter, 
   MoreHorizontal, Download, Sparkles, Trash2,
-  CheckCircle2, Tags, Mail, Building2
+  CheckCircle2, Tags, Mail, Building2, Loader2
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -16,46 +16,17 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import LeadImportModal from "@/components/leads/LeadImportModal";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useLeads, Lead } from "@/hooks/useLeads";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import { toast } from "sonner";
-
-// Mock data
-const MOCK_LEADS = [
-  { id: "1", name: "Sarah Chen", email: "sarah@techflow.ai", company: "TechFlow", role: "CTO", status: "active", ai_score: 94 },
-  { id: "2", name: "Marcus Wright", email: "m.wright@nexus.co", company: "Nexus Corp", role: "Head of Growth", status: "active", ai_score: 82 },
-  { id: "3", name: "Elena Rodriguez", email: "elena@bolt.design", company: "Bolt Design", role: "Founder", status: "active", ai_score: 88 },
-  { id: "4", name: "David Kim", email: "david@streak.io", company: "Streak", role: "Sales VP", status: "unsubscribed", ai_score: 42 },
-  { id: "5", name: "Julian Voss", email: "julian@voss.de", company: "Voss Media", role: "Marketing Director", status: "active", ai_score: 76 },
-];
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Leads() {
-  const { user } = useAuth();
-  const [leads, setLeads] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { leads, isLoading, deleteLead } = useLeads();
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
-  React.useEffect(() => {
-    if (user) {
-      fetchLeads();
-    }
-  }, [user]);
-
-  const fetchLeads = async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
-
-    if (data) setLeads(data);
-    setIsLoading(false);
-  };
 
   const toggleSelectAll = () => {
     if (selectedLeads.length === leads.length) {
@@ -71,8 +42,17 @@ export default function Leads() {
     );
   };
 
+  const handleDelete = async (id: string, soft: boolean = true) => {
+    try {
+      await deleteLead({ id, soft });
+      setSelectedLeads(prev => prev.filter(item => item !== id));
+    } catch (err: any) {
+      toast.error(`Delete failed: ${err.message}`);
+    }
+  };
+
   const filteredLeads = leads.filter(l => 
-    l.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    l.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     l.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     l.company?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -157,17 +137,24 @@ export default function Leads() {
                   <ActionButton icon={<Mail className="w-3.5 h-3.5" />} label="Assign to Campaign" />
                 </div>
               </div>
-              <Button variant="ghost" className="text-white hover:bg-white/10 text-[10px] font-black uppercase tracking-widest gap-2">
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  selectedLeads.forEach(id => handleDelete(id, true));
+                }}
+                className="text-white hover:bg-white/10 text-[10px] font-black uppercase tracking-widest gap-2"
+              >
                 <Trash2 className="w-4 h-4" />
-                Delete Selected
+                Archive Selected
               </Button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Leads Table */}
+        {/* Leads List */}
         <div className="bg-[#111111] border border-white/5 rounded-[2.5rem] overflow-hidden">
-          <table className="w-full text-left border-collapse">
+          {/* Desktop Table View */}
+          <table className="w-full text-left border-collapse hidden md:table">
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.02]">
                 <th className="p-6 w-12">
@@ -187,7 +174,7 @@ export default function Leads() {
             <tbody>
               {isLoading ? (
                 <>
-                  {[1, 2, 3, 4, 5].map((i) => (
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                     <tr key={i} className="border-b border-white/5">
                       <td className="p-6"><Skeleton className="w-4 h-4 rounded-md" /></td>
                       <td className="p-6 text-sm"><Skeleton className="w-48 h-8 rounded-lg" /></td>
@@ -211,11 +198,11 @@ export default function Leads() {
                       </td>
                       <td className="p-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500 font-bold">
-                            {lead.full_name?.charAt(0) || lead.email?.charAt(0)}
+                          <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500 font-bold uppercase">
+                            {lead.name?.charAt(0) || lead.email?.charAt(0)}
                           </div>
                           <div>
-                            <div className="text-sm font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight">{lead.full_name}</div>
+                            <div className="text-sm font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight">{lead.name}</div>
                             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{lead.email}</div>
                           </div>
                         </div>
@@ -232,7 +219,8 @@ export default function Leads() {
                       <td className="p-6">
                         <div className={cn(
                           "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                          lead.status === "active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                          lead.status === "active" ? "bg-emerald-500/10 text-emerald-500" : 
+                          lead.status === "archived" ? "bg-slate-500/10 text-slate-500" : "bg-red-500/10 text-red-500"
                         )}>
                           <CheckCircle2 className="w-3 h-3" />
                           {lead.status}
@@ -264,11 +252,16 @@ export default function Leads() {
                             <DropdownMenuItem className="rounded-xl gap-2 font-bold text-[11px] uppercase tracking-widest cursor-pointer text-slate-400 hover:text-white focus:bg-white/5">
                               Edit Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="rounded-xl gap-2 font-bold text-[11px] uppercase tracking-widest cursor-pointer text-slate-400 hover:text-white focus:bg-white/5">
-                              View Activity
-                            </DropdownMenuItem>
-                            <div className="h-px bg-white/5 my-1" />
-                            <DropdownMenuItem className="rounded-xl gap-2 font-bold text-[11px] uppercase tracking-widest cursor-pointer text-red-400 hover:text-red-300 focus:bg-red-500/5">
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                toast.promise(handleDelete(lead.id, true), {
+                                  loading: 'Archiving lead...',
+                                  success: 'Lead archived',
+                                  error: 'Failed to archive'
+                                });
+                              }}
+                              className="rounded-xl gap-2 font-bold text-[11px] uppercase tracking-widest cursor-pointer text-amber-400 hover:text-amber-300 focus:bg-amber-500/5"
+                            >
                               Archive Lead
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -277,24 +270,69 @@ export default function Leads() {
                     </tr>
                   ))}
                 </>
-              ) : (
-                <tr>
-                  <td colSpan={6}>
-                    <EmptyState 
-                      icon={Upload}
-                      title="Your database is empty"
-                      description="Import your first lead list or add contacts manually to start scaling your outreach engine."
-                      ctaText="Import Leads"
-                      onCtaClick={() => setIsImportModalOpen(true)}
-                    />
-                  </td>
-                </tr>
-              )}
+              ) : null}
             </tbody>
           </table>
+
+          {/* Mobile Card List View */}
+          <div className="md:hidden divide-y divide-white/5">
+            {isLoading ? (
+              [1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 m-4 rounded-2xl" />)
+            ) : filteredLeads.map(lead => (
+              <div key={lead.id} className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500 font-bold uppercase">
+                      {lead.name?.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-black text-white uppercase tracking-tight">{lead.name}</div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{lead.email}</div>
+                    </div>
+                  </div>
+                  <Checkbox 
+                    checked={selectedLeads.includes(lead.id)}
+                    onCheckedChange={() => toggleSelect(lead.id)}
+                    className="border-white/10"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{lead.company}</span>
+                  <div className={cn(
+                    "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
+                    lead.status === "active" ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-500/10 text-slate-500"
+                  )}>
+                    {lead.status}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {!isLoading && filteredLeads.length === 0 && (
+            <div className="py-20">
+              <EmptyState 
+                icon={Users}
+                title="No leads yet — let's fix that"
+                description="Import your audience or add them manually to start scaling."
+                ctaText="Import CSV"
+                onCtaClick={() => {
+                  toast.info("Opening import engine...");
+                  setIsImportModalOpen(true);
+                }}
+              />
+              <div className="flex justify-center -mt-8">
+                <button className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors">
+                  Or add manually
+                </button>
+              </div>
+            </div>
+          )}
           
           <div className="p-8 border-t border-white/5 bg-white/[0.01] flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Showing 5 of 1,240 leads</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              Showing {filteredLeads.length} of {leads.length} leads
+            </span>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="h-10 border-white/5 bg-white/2 text-[10px] font-black uppercase tracking-widest rounded-xl disabled:opacity-30" disabled>
                 Previous
@@ -307,14 +345,9 @@ export default function Leads() {
         </div>
       </div>
 
-        <LeadImportModal 
+      <LeadImportModal 
         open={isImportModalOpen} 
         onOpenChange={setIsImportModalOpen}
-        onImportComplete={(count) => {
-          setIsImportModalOpen(false);
-          toast.success(`Successfully imported ${count} leads! 🚀`);
-          fetchLeads();
-        }}
       />
     </DashboardLayout>
   );

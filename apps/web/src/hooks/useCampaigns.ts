@@ -1,137 +1,121 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { campaignsApi, Campaign } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { campaignsApi } from '@/lib/api';
 
-// Get all campaigns
+export interface Campaign {
+  id: string;
+  user_id: string;
+  name: string;
+  subject_line: string;
+  body: string;
+  status: 'draft' | 'sent' | 'scheduled';
+  ai_score: number;
+  predicted_open_rate: number;
+  send_time: string | null;
+  sent_count: number;
+  open_count: number;
+  click_count: number;
+  created_at: string;
+}
+
 export const useCampaigns = () => {
-    return useQuery({
-        queryKey: ['campaigns'],
-        queryFn: async () => {
-            const response = await campaignsApi.getAll();
-            return response.data.data;
-        },
-        staleTime: 1000 * 60 * 5,
-    });
-};
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-// Get single campaign
-export const useCampaign = (id: string) => {
-    return useQuery({
-        queryKey: ['campaigns', id],
-        queryFn: async () => {
-            const response = await campaignsApi.getById(id);
-            return response.data.data;
-        },
-        enabled: !!id,
-    });
-};
+  const query = useQuery({
+    queryKey: ['campaigns', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
 
-// Get campaign stats
-export const useCampaignStats = () => {
-    return useQuery({
-        queryKey: ['campaigns', 'stats'],
-        queryFn: async () => {
-            const response = await campaignsApi.getStats();
-            return response.data.data;
-        },
-        staleTime: 1000 * 60 * 2,
-    });
-};
+      if (error) throw error;
+      return data as Campaign[];
+    },
+    enabled: !!user?.id,
+  });
 
-// Create campaign
-export const useCreateCampaign = () => {
-    const queryClient = useQueryClient();
+  const createMutation = useMutation({
+    mutationFn: async (newCampaign: Partial<Campaign>) => {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .insert([{ ...newCampaign, user_id: user?.id }])
+        .select()
+        .single();
 
-    return useMutation({
-        mutationFn: (data: Partial<Campaign>) => campaignsApi.create(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-            toast.success('Campaign created successfully');
-        },
-        onError: () => {
-            toast.error('Failed to create campaign');
-        },
-    });
-};
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaigns', user?.id] });
+      toast.success('Campaign created successfully');
+    },
+    onError: (error: any) => {
+      toast.error(`Error: ${error.message}`);
+    },
+  });
 
-// Update campaign
-export const useUpdateCampaign = () => {
-    const queryClient = useQueryClient();
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Campaign> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-    return useMutation({
-        mutationFn: ({ id, data }: { id: string; data: Partial<Campaign> }) =>
-            campaignsApi.update(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-            toast.success('Campaign updated');
-        },
-        onError: () => {
-            toast.error('Failed to update campaign');
-        },
-    });
-};
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaigns', user?.id] });
+    },
+    onError: (error: any) => {
+      toast.error(`Update failed: ${error.message}`);
+    },
+  });
 
-// Delete campaign
-export const useDeleteCampaign = () => {
-    const queryClient = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id', id);
 
-    return useMutation({
-        mutationFn: (id: string) => campaignsApi.delete(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-            toast.success('Campaign deleted');
-        },
-        onError: () => {
-            toast.error('Failed to delete campaign');
-        },
-    });
-};
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaigns', user?.id] });
+      toast.success('Campaign deleted');
+    },
+  });
 
-// Launch campaign
-export const useLaunchCampaign = () => {
-    const queryClient = useQueryClient();
+  const sendMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await campaignsApi.send(id);
+      return response.data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['campaigns', user?.id] });
+      toast.success(data.message || 'Campaign sent successfully');
+    },
+    onError: (error: any) => {
+      toast.error(`Send failed: ${error.response?.data?.message || error.message}`);
+    },
+  });
 
-    return useMutation({
-        mutationFn: (id: string) => campaignsApi.launch(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-            toast.success('🚀 Campaign launched!');
-        },
-        onError: () => {
-            toast.error('Failed to launch campaign');
-        },
-    });
-};
-
-// Pause campaign
-export const usePauseCampaign = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: (id: string) => campaignsApi.pause(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-            toast.success('Campaign paused');
-        },
-        onError: () => {
-            toast.error('Failed to pause campaign');
-        },
-    });
-};
-
-// Resume campaign
-export const useResumeCampaign = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: (id: string) => campaignsApi.resume(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-            toast.success('Campaign resumed');
-        },
-        onError: () => {
-            toast.error('Failed to resume campaign');
-        },
-    });
+  return {
+    campaigns: query.data || [],
+    isLoading: query.isLoading,
+    error: query.error,
+    createCampaign: createMutation.mutateAsync,
+    updateCampaign: updateMutation.mutateAsync,
+    deleteCampaign: deleteMutation.mutateAsync,
+    isMutating: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending || sendMutation.isPending,
+    sendCampaign: sendMutation.mutateAsync,
+  };
 };

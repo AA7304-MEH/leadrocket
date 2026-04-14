@@ -1,93 +1,146 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { leadsApi, Lead } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-// Get all leads
+export interface Lead {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  company: string;
+  role: string;
+  status: 'active' | 'archived' | 'unsubscribed';
+  ai_score: number;
+  source: string;
+  tags: string[];
+  last_contacted: string | null;
+  created_at: string;
+}
+
+export interface LeadList {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  lead_count: number;
+  created_at: string;
+}
+
 export const useLeads = () => {
-    return useQuery({
-        queryKey: ['leads'],
-        queryFn: async () => {
-            const response = await leadsApi.getAll();
-            return response.data.data;
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
-    });
-};
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-// Get single lead
-export const useLead = (id: string) => {
-    return useQuery({
-        queryKey: ['leads', id],
-        queryFn: async () => {
-            const response = await leadsApi.getById(id);
-            return response.data.data;
-        },
-        enabled: !!id,
-    });
-};
+  const leadsQuery = useQuery({
+    queryKey: ['leads', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
 
-// Create lead
-export const useCreateLead = () => {
-    const queryClient = useQueryClient();
+      if (error) throw error;
+      return data as Lead[];
+    },
+    enabled: !!user?.id,
+  });
 
-    return useMutation({
-        mutationFn: (data: Partial<Lead>) => leadsApi.create(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['leads'] });
-            toast.success('Lead created successfully');
-        },
-        onError: () => {
-            toast.error('Failed to create lead');
-        },
-    });
-};
+  const leadListsQuery = useQuery({
+    queryKey: ['lead_lists', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lead_lists')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
 
-// Update lead
-export const useUpdateLead = () => {
-    const queryClient = useQueryClient();
+      if (error) throw error;
+      return data as LeadList[];
+    },
+    enabled: !!user?.id,
+  });
 
-    return useMutation({
-        mutationFn: ({ id, data }: { id: string; data: Partial<Lead> }) =>
-            leadsApi.update(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['leads'] });
-            toast.success('Lead updated successfully');
-        },
-        onError: () => {
-            toast.error('Failed to update lead');
-        },
-    });
-};
+  const createLeadMutation = useMutation({
+    mutationFn: async (newLead: Partial<Lead>) => {
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([{ ...newLead, user_id: user?.id }])
+        .select()
+        .single();
 
-// Delete lead
-export const useDeleteLead = () => {
-    const queryClient = useQueryClient();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads', user?.id] });
+      toast.success('Lead added successfully');
+    },
+  });
 
-    return useMutation({
-        mutationFn: (id: string) => leadsApi.delete(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['leads'] });
-            toast.success('Lead deleted');
-        },
-        onError: () => {
-            toast.error('Failed to delete lead');
-        },
-    });
-};
+  const bulkImportMutation = useMutation({
+    mutationFn: async (leads: Partial<Lead>[]) => {
+      const leadsWithUser = leads.map(l => ({ ...l, user_id: user?.id }));
+      const { data, error } = await supabase
+        .from('leads')
+        .insert(leadsWithUser)
+        .select();
 
-// Verify lead
-export const useVerifyLead = () => {
-    const queryClient = useQueryClient();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['leads', user?.id] });
+      toast.success(`${data.length} leads imported successfully`);
+    },
+  });
 
-    return useMutation({
-        mutationFn: (id: string) => leadsApi.verify(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['leads'] });
-            toast.success('Verification started');
-        },
-        onError: () => {
-            toast.error('Failed to verify lead');
-        },
-    });
+  const updateLeadMutation = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Lead> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('leads')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads', user?.id] });
+    },
+  });
+
+  const deleteLeadMutation = useMutation({
+    mutationFn: async ({ id, soft = true }: { id: string, soft?: boolean }) => {
+      if (soft) {
+        const { error } = await supabase
+          .from('leads')
+          .update({ status: 'archived' })
+          .eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('leads')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads', user?.id] });
+      toast.success('Lead removed');
+    },
+  });
+
+  return {
+    leads: leadsQuery.data || [],
+    leadLists: leadListsQuery.data || [],
+    isLoading: leadsQuery.isLoading || leadListsQuery.isLoading,
+    createLead: createLeadMutation.mutateAsync,
+    bulkImport: bulkImportMutation.mutateAsync,
+    updateLead: updateLeadMutation.mutateAsync,
+    deleteLead: deleteLeadMutation.mutateAsync,
+  };
 };

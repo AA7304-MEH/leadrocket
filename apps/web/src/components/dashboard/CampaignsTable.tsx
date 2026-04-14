@@ -1,74 +1,22 @@
 import { motion } from "framer-motion";
-import { MoreVertical, Rocket, Send, Clock, AlertCircle } from "lucide-react";
+import { MoreVertical, Rocket, Send, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
-import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import { useNavigate } from "react-router-dom";
 import React from 'react';
+import { Campaign } from "@/hooks/useCampaigns";
 
-const mockCampaigns = [
-  {
-    id: 1,
-    name: "Q2 Enterprise Outreach",
-    status: "Active",
-    successScore: 87,
-    openRate: 42,
-    sentDate: "Today, 10:30 AM",
-  },
-  {
-    id: 2,
-    name: "SaaS Founders Sequence",
-    status: "Draft",
-    successScore: 64,
-    openRate: 0,
-    sentDate: "Pending",
-  },
-  {
-    id: 3,
-    name: "Growth Hackers Viral Loop",
-    status: "Sent",
-    successScore: 92,
-    openRate: 58,
-    sentDate: "Yesterday, 3:45 PM",
-  },
-  {
-    id: 4,
-    name: "Follow-up - Cold Leads",
-    status: "Active",
-    successScore: 45,
-    openRate: 21,
-    sentDate: "Today, 9:15 AM",
-  }
-];
+interface CampaignsTableProps {
+  campaigns: Campaign[];
+  isLoading?: boolean;
+}
 
-export default function CampaignsTable() {
-  const { user } = useAuth();
+export default function CampaignsTable({ campaigns, isLoading = false }: CampaignsTableProps) {
   const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchRecentCampaigns();
-    }
-  }, [user]);
-
-  const fetchRecentCampaigns = async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    if (data) setCampaigns(data);
-    setIsLoading(false);
-  };
+}
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}

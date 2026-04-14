@@ -5,7 +5,8 @@ import {
   cancelSubscription,
   getPaymentHistory,
   handleWebhook,
-  getSubscriptionStatus
+  getSubscriptionStatus,
+  capturePayPalPayment
 } from '../controllers/paymentController';
 import { protect } from '../middleware/auth';
 
@@ -23,5 +24,6 @@ router.post('/process', processPayment);
 router.get('/history', getPaymentHistory);
 router.get('/subscription-status', getSubscriptionStatus);
 router.post('/cancel/:subscriptionId', cancelSubscription);
+router.post('/paypal/capture', capturePayPalPayment);
 
 export default router;

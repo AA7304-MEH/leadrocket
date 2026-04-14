@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
 import { AuthRequest } from '../middleware/auth';
+import { EmailService } from '../services/emailService';
 
 // Get all campaigns for user
 export const getCampaigns = async (req: AuthRequest, res: Response) => {
@@ -251,5 +252,69 @@ export const saveSequence = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error('Save sequence error:', error);
         res.status(500).json({ success: false, message: 'Failed to save sequence' });
+    }
+};
+
+// Send Campaign Now
+export const sendCampaign = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const campaign = await prisma.campaign.findFirst({
+            where: { id, userId: req.user?.id },
+            include: { list: true }
+        });
+
+        if (!campaign) {
+            return res.status(404).json({ success: false, message: 'Campaign not found' });
+        }
+
+        if (!campaign.listId) {
+            return res.status(400).json({ success: false, message: 'Campaign has no lead list attached' });
+        }
+
+        // 1. Fetch all leads in the list
+        const leads = await prisma.lead.findMany({
+            where: { listId: campaign.listId, userId: req.user?.id }
+        });
+
+        if (leads.length === 0) {
+            return res.status(400).json({ success: false, message: 'No leads found in the attached list' });
+        }
+
+        // 2. Update status to sending
+        await prisma.campaign.update({
+            where: { id },
+            data: { status: 'sending' }
+        });
+
+        // 3. Call email service
+        const result = await EmailService.sendBulkEmails(leads, campaign);
+
+        // 4. Update status to sent and set sent count
+        const updated = await prisma.campaign.update({
+            where: { id },
+            data: { 
+                status: 'sent',
+                sentCount: result.sent,
+                metrics: JSON.stringify({
+                    sent: result.sent,
+                    failed: result.failed,
+                    opened: 0,
+                    replied: 0,
+                    converted: 0
+                })
+            }
+        });
+
+        res.json({ 
+            success: true, 
+            data: updated, 
+            sent: result.sent, 
+            failed: result.failed,
+            message: `Campaign sent to ${result.sent} leads!` 
+        });
+    } catch (error) {
+        console.error('Send campaign error:', error);
+        res.status(500).json({ success: false, message: 'Failed to send campaign' });
     }
 };

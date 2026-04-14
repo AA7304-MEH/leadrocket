@@ -136,22 +136,11 @@ export default function Campaigns() {
         </div>
 
         {/* Campaigns Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {isLoading ? (
             <>
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-[320px] rounded-[2.5rem] bg-[#111] p-8 space-y-6">
-                  <div className="flex justify-between">
-                    <Skeleton className="w-32 h-6" />
-                    <Skeleton className="w-12 h-6 rounded-full" />
-                  </div>
-                  <Skeleton className="w-full h-8" />
-                  <Skeleton className="w-3/4 h-4" />
-                  <div className="pt-12 flex justify-between">
-                    <Skeleton className="w-20 h-4" />
-                    <Skeleton className="w-20 h-4" />
-                  </div>
-                </div>
+                <Skeleton key={i} className="h-40 rounded-[2.5rem]" />
               ))}
             </>
           ) : campaigns.length > 0 ? (
@@ -166,10 +155,13 @@ export default function Campaigns() {
             <div className="col-span-full">
               <EmptyState 
                 icon={Rocket}
-                title="No campaigns yet"
-                description="Your first high-performance outreach engine is just one click away. Ready to blast off?"
-                ctaText="Create First Campaign"
-                onCtaClick={() => navigate("/campaigns/new")}
+                title="Your first campaign is waiting"
+                description="Your high-performance scale-up engine is ready for takeoff. Let's build your first blast."
+                ctaText="Create Campaign"
+                onCtaClick={() => {
+                  toast.info("Initializing new campaign builder...");
+                  navigate("/campaigns/new");
+                }}
               />
             </div>
           )}

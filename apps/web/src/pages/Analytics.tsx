@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { 
   ArrowUpRight, ArrowDownRight, Mail, MousePointer2, 
-  Users, Target, Calendar, Info, Sparkles 
+  Users, Target, Calendar, Info, Sparkles, BarChart3
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 

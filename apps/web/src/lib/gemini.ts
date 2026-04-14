@@ -1,7 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 export interface SubjectLineAnalysis {
   score: number;
@@ -9,56 +7,82 @@ export interface SubjectLineAnalysis {
   suggestions: string[];
 }
 
-export const analyzeSubjectLine = async (subject: string): Promise<SubjectLineAnalysis> => {
-  if (!subject) return { score: 0, feedback: "Enter a subject line", suggestions: [] };
+export async function callGemini(prompt: string): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    throw new Error('MISSING_API_KEY');
+  }
+
+  const response = await fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { 
+        temperature: 0.7, 
+        maxOutputTokens: 1000,
+        response_mime_type: "application/json"
+      }
+    })
+  });
+
+  if (!response.ok) {
+    if (response.status === 403 || response.status === 401) {
+      throw new Error('GEMINI_AUTH_ERROR');
+    }
+    throw new Error(`Gemini API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+export async function analyzeSubjectLine(subject: string): Promise<SubjectLineAnalysis> {
+  const prompt = `Analyze this email subject line: "${subject}". 
+  Provide a score (0-100), 1-sentence feedback, and 3 specific improvement suggestions.
+  Return as JSON: { "score": number, "feedback": string, "suggestions": string[] }`;
+
+  try {
+    const response = await callGemini(prompt);
+    return JSON.parse(response);
+  } catch (err) {
+    console.error('Gemini Analysis failed:', err);
+    return {
+      score: 70,
+      feedback: "Analysis currently unavailable. Your subject line looks professional.",
+      suggestions: ["Keep it under 60 characters", "Add a sense of urgency", "Avoid spam trigger words"]
+    };
+  }
+}
+
+export async function remixEmailBody(body: string): Promise<string> {
+  const prompt = `Rewrite this email body to be more engaging, professional, and personalized for a B2B audience. 
+  Keep the same core message but improve the flow and call to action:
   
+  ${body}`;
+
   try {
-    const prompt = `You are an email marketing expert. Analyze this email subject line and return a JSON object with: 
-    score (0-100 integer), 
-    feedback (max 15 words), 
-    suggestions (array of 2 short improvement tips). 
-    Subject: ${subject}`;
-
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
-    
-    // Clean JSON response (handle potential markdown blocks)
-    const jsonStr = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(jsonStr);
-  } catch (error) {
-    console.error("Gemini Error:", error);
-    return { score: 50, feedback: "AI score unavailable", suggestions: [] };
+    return await callGemini(prompt);
+  } catch (err) {
+    console.error('Gemini Remix failed:', err);
+    return body; // Fallback to original
   }
-};
+}
 
-export const remixEmailBody = async (body: string): Promise<string> => {
-  if (!body) return "";
-  
+export async function generateSubjectLines(name: string, company: string, focus: string): Promise<string[]> {
+  const prompt = `Generate 5 highly engaging email subject lines for a campaign named "${name}" for the company "${company}" focusing on "${focus}".
+  Return as a JSON array of strings: ["Subject 1", "Subject 2", ...]`;
+
   try {
-    const prompt = `Rewrite this marketing email to be more compelling, concise, and conversion-focused. Keep the same intent. 
-    Return only the improved email body in HTML format. Don't include any other text.
-    Original: ${body}`;
-
-    const result = await model.generateContent(prompt);
-    return result.response.text().replace(/```html|```/g, "").trim();
-  } catch (error) {
-    console.error("Gemini Error:", error);
-    return body;
+    const response = await callGemini(prompt);
+    return JSON.parse(response);
+  } catch (err) {
+    console.error('Gemini Suggestion failed:', err);
+    return [
+      "Quick question about " + company,
+      "New growth strategy for " + company,
+      "Regarding your outreach strategy",
+      "Scaling " + company + " in 2024",
+      "Ideas for " + name
+    ];
   }
-};
-
-export const generateSubjectLines = async (name: string, industry: string, goal: string): Promise<string[]> => {
-  try {
-    const prompt = `Generate 5 high-converting email subject lines for this campaign. 
-    Return strictly as a JSON array of strings.
-    Campaign context: ${name}, Industry: ${industry}, Goal: ${goal}`;
-
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().replace(/```json|```/g, "").trim();
-    return JSON.parse(text);
-  } catch (error) {
-    console.error("Gemini Error:", error);
-    return ["Quick question about your growth", "Ideas for LeadRockets"];
-  }
-};
+}

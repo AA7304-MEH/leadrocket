@@ -87,9 +87,15 @@
 }
 
 /* Custom font loading if Cal Sans is used */
+
 @font-face {
   font-family: 'Cal Sans';
   src: url('https://cdn.jsdelivr.net/gh/fontsource/cal-sans@v1.0.0/fonts/cal-sans-700.woff2') format('woff2');
   font-weight: 700;
   font-display: swap;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0 }
+  100% { background-position: -200% 0 }
 }

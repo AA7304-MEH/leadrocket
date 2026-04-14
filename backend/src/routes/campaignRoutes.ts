@@ -11,7 +11,8 @@ import {
     resumeCampaign,
     getCampaignStats,
     cloneCampaign,
-    saveSequence
+    saveSequence,
+    sendCampaign
 } from '../controllers/campaignController';
 import { protect } from '../middleware/auth';
 
@@ -34,6 +35,7 @@ router.delete('/:id', deleteCampaign);
 router.post('/:id/launch', launchCampaign);
 router.post('/:id/pause', pauseCampaign);
 router.post('/:id/resume', resumeCampaign);
+router.post('/:id/send', sendCampaign);
 router.post('/clone', cloneCampaign);
 router.post('/save-sequence', saveSequence as any);
 

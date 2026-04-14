@@ -1,10 +1,13 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas  = ["public", "auth"]
 }
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 model User {
@@ -53,12 +56,16 @@ model User {
   leads        Lead[]
   campaigns    Campaign[]
   workflows    Workflow[]
+  leadLists    LeadList[]
+  templates    Template[]
 
   // Viral Growth Relations
   referrals     Referral[] @relation("Referrer")
   referralCode  ReferralCode?
   rewards       Reward[]
   gameStats     GameStats?
+
+  @@schema("public")
 }
 
 model Subscription {
@@ -93,6 +100,8 @@ model Subscription {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@schema("public")
 }
 
 model Lead {
@@ -132,8 +141,43 @@ model Lead {
   scoreReason String?
   isActive    Boolean @default(true)
 
+  listId String?
+  list   LeadList? @relation(fields: [listId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@schema("public")
+}
+
+model LeadList {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  leads       Lead[]
+  campaigns   Campaign[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@schema("public")
+}
+
+model Template {
+  id         String   @id @default(uuid())
+  name       String
+  subject    String?
+  body       String?
+  category   String?
+  isPublic   Boolean  @default(false)
+  remixCount Int      @default(0)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@schema("public")
 }
 
 model Campaign {
@@ -147,8 +191,15 @@ model Campaign {
   sequenceFlow String? // JSON string
   metrics      String? // JSON string
 
+  listId      String?
+  list        LeadList? @relation(fields: [listId], references: [id])
+  scheduledAt DateTime?
+  sentCount   Int       @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@schema("public")
 }
 
 model Workflow {
@@ -165,6 +216,8 @@ model Workflow {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@schema("public")
 }
 
 // --- VIRAL GROWTH ENGINE MODELS ---
@@ -180,6 +233,8 @@ model ReferralCode {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@schema("public")
 }
 
 model Referral {
@@ -195,6 +250,8 @@ model Referral {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@schema("public")
 }
 
 model Reward {
@@ -211,6 +268,8 @@ model Reward {
   source    String   // referral, achievement, daily_login
   
   createdAt DateTime @default(now())
+
+  @@schema("public")
 }
 
 model GameStats {
@@ -229,4 +288,6 @@ model GameStats {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@schema("public")
 }

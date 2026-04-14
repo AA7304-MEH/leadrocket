@@ -14,7 +14,8 @@ import {
     Trophy,
     CheckCircle2,
     ArrowRight,
-    Star
+    Star,
+    Clock
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,7 +69,8 @@ const Growth: React.FC = () => {
     };
 
     const copyToClipboard = () => {
-        const link = `${window.location.origin}/auth?ref=${referralCode}`;
+        const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+        const link = `${baseUrl}/auth?ref=${referralCode}`;
         navigator.clipboard.writeText(link);
         toast.success("Referral link copied!", {
             description: "Share it with your network to earn credits."
@@ -82,7 +84,8 @@ const Growth: React.FC = () => {
     };
 
     const shareSocial = (platform: string) => {
-        const link = encodeURIComponent(`${window.location.origin}/auth?ref=${referralCode}`);
+        const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+        const link = encodeURIComponent(`${baseUrl}/auth?ref=${referralCode}`);
         const text = encodeURIComponent("I'm using LeadRockets to automate my sales with AI. Join me and get free credits! 🚀");
         
         let url = '';
@@ -118,7 +121,7 @@ const Growth: React.FC = () => {
                             <div className="flex-1 relative group">
                                 <Input 
                                     readOnly 
-                                    value={`${window.location.host}/auth?ref=${referralCode}`}
+                                    value={`${(import.meta.env.VITE_APP_URL || window.location.origin).replace('https://', '').replace('http://', '')}/auth?ref=${referralCode}`}
                                     className="h-14 bg-white/10 border-white/20 text-white font-bold pl-4 pr-12 rounded-2xl backdrop-blur-md"
                                 />
                                 <Button 
