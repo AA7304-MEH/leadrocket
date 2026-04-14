@@ -7,8 +7,8 @@ import { CompetitiveService } from '../services/competitiveService';
 // Get all leads for user
 export const getLeads = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const page = parseInt(req.query.page as any) || 1;
+    const limit = parseInt(req.query.limit as any) || 10;
     const skip = (page - 1) * limit;
 
     // Build query
@@ -16,17 +16,17 @@ export const getLeads = async (req: AuthRequest, res: Response, next: NextFuncti
 
     // Filter by status
     if (req.query.status) {
-      whereClause.status = req.query.status as string;
+      whereClause.status = req.query.status as any;
     }
 
     // Filter by priority
     if (req.query.priority) {
-      whereClause.priority = req.query.priority as string;
+      whereClause.priority = req.query.priority as any;
     }
 
     // Search by company name or contact name (Postgres ILIKE simulation with contains or OR)
     if (req.query.search) {
-      const search = req.query.search as string;
+      const search = req.query.search as any;
       whereClause.OR = [
         { companyName: { contains: search, mode: 'insensitive' } },
         { contactName: { contains: search, mode: 'insensitive' } },
@@ -64,7 +64,7 @@ export const getLeads = async (req: AuthRequest, res: Response, next: NextFuncti
 export const getLead = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
     const lead = await prisma.lead.findUnique({
-      where: { id: req.params.id }
+      where: { id: String(req.params.id) }
     });
 
     if (!lead) {
@@ -118,7 +118,7 @@ export const createLead = async (req: AuthRequest, res: Response, next: NextFunc
 export const updateLead = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
     const lead = await prisma.lead.findUnique({
-      where: { id: req.params.id }
+      where: { id: String(req.params.id) }
     });
 
     if (!lead) {
@@ -137,7 +137,7 @@ export const updateLead = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     const updatedLead = await prisma.lead.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: req.body
     });
 
@@ -154,7 +154,7 @@ export const updateLead = async (req: AuthRequest, res: Response, next: NextFunc
 export const deleteLead = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
     const lead = await prisma.lead.findUnique({
-      where: { id: req.params.id }
+      where: { id: String(req.params.id) }
     });
 
     if (!lead) {
@@ -173,7 +173,7 @@ export const deleteLead = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     await prisma.lead.delete({
-      where: { id: req.params.id }
+      where: { id: String(req.params.id) }
     });
 
     res.status(200).json({
@@ -361,7 +361,7 @@ export const generateLeads = async (req: AuthRequest, res: Response, next: NextF
 // Draft Email
 export const draftEmail = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const lead = await prisma.lead.findUnique({ where: { id: req.params.id } });
+    const lead = await prisma.lead.findUnique({ where: { id: String(req.params.id) } });
 
     if (!lead) {
       return res.status(404).json({
@@ -477,7 +477,7 @@ export const getTopPriorityLeads = async (req: AuthRequest, res: Response, next:
 // Enrich Lead (Calculate Score)
 export const enrichLead = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const lead = await prisma.lead.findUnique({ where: { id: req.params.id } });
+    const lead = await prisma.lead.findUnique({ where: { id: String(req.params.id) } });
 
     if (!lead) {
       return res.status(404).json({ success: false, error: 'Lead not found' });
@@ -523,7 +523,7 @@ export const enrichLead = async (req: AuthRequest, res: Response, next: NextFunc
 // Analyze Competitors
 export const analyzeCompetitors = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const lead = await prisma.lead.findUnique({ where: { id: req.params.id } });
+    const lead = await prisma.lead.findUnique({ where: { id: String(req.params.id) } });
 
     if (!lead) {
       return res.status(404).json({ success: false, error: 'Lead not found' });

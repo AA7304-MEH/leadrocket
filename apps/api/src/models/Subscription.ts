@@ -134,7 +134,7 @@ SubscriptionSchema.index({ currentPeriodEnd: 1 });
 
 // Virtual for checking if subscription is active
 SubscriptionSchema.virtual('isActive').get(function() {
-  return ['active', 'trial'].includes(this.status as string);
+  return ['active', 'trial'].includes(this.status as any);
 });
 
 // Virtual for checking if subscription is in trial

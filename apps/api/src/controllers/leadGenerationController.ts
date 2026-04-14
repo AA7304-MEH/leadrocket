@@ -68,8 +68,8 @@ export const getLeadStats = async (req: AuthRequest, res: Response, next: NextFu
 // Get lead generation history
 export const getGenerationHistory = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const page = parseInt(req.query.page as any) || 1;
+    const limit = parseInt(req.query.limit as any) || 10;
     const skip = (page - 1) * limit;
 
     // This would typically come from a separate collection tracking generation events

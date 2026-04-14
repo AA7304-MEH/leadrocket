@@ -8,7 +8,7 @@ export const getAdminAnalytics = async (req: AuthRequest, res: Response, next: N
   try {
     const { period = '30d' } = req.query;
 
-    const analytics = await AnalyticsService.getAdminAnalytics(period as string);
+    const analytics = await AnalyticsService.getAdminAnalytics(period as any);
 
     res.status(200).json({
       success: true,
@@ -24,7 +24,7 @@ export const getUserAnalytics = async (req: AuthRequest, res: Response, next: Ne
   try {
     const { period = '30d' } = req.query;
 
-    const analytics = await AnalyticsService.getUserAnalytics(req.user, period as string);
+    const analytics = await AnalyticsService.getUserAnalytics(req.user, period as any);
 
     res.status(200).json({
       success: true,
@@ -64,7 +64,7 @@ export const getLeadPerformance = async (req: AuthRequest, res: Response, next: 
 
     // Get lead performance data
     const now = new Date();
-    const periodDays = (AnalyticsService as any)['parsePeriod'](period as string);
+    const periodDays = (AnalyticsService as any)['parsePeriod'](period as any);
     const startDate = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
 
     const leads = await prisma.lead.findMany({

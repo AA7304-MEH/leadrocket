@@ -63,8 +63,8 @@ export const getAdminStats = async (req: AuthRequest, res: Response, next: NextF
 // Get all users (admin only)
 export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const page = parseInt(req.query.page as any) || 1;
+    const limit = parseInt(req.query.limit as any) || 10;
     const skip = (page - 1) * limit;
 
     const users = await prisma.user.findMany({

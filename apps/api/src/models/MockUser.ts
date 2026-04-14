@@ -121,7 +121,7 @@ export class MockUser {
     getSignedJwtToken(): string {
         return jwt.sign(
             { id: this._id, email: this.email },
-            (process.env.JWT_SECRET || 'secret') as string,
+            (process.env.JWT_SECRET || 'secret') as any,
             {
                 expiresIn: process.env.JWT_EXPIRE || '7d'
             } as any

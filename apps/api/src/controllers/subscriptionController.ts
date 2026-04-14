@@ -24,7 +24,7 @@ export const getSubscriptions = async (req: AuthRequest, res: Response, next: Ne
 // Get single subscription
 export const getSubscription = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const subscriptionId = req.params.id; // Usually subscription ID, but if not provided, we look up by user
+    const subscriptionId = String(req.params.id); // Usually subscription ID, but if not provided, we look up by user
 
     let subscription;
     if (subscriptionId) {
@@ -102,7 +102,7 @@ export const createSubscription = async (req: AuthRequest, res: Response, next: 
 // Update subscription
 export const updateSubscription = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const subscription = await prisma.subscription.findUnique({ where: { id: req.params.id } });
+    const subscription = await prisma.subscription.findUnique({ where: { id: String(req.params.id) } });
 
     if (!subscription) {
       return res.status(404).json({
@@ -120,7 +120,7 @@ export const updateSubscription = async (req: AuthRequest, res: Response, next: 
     }
 
     const updatedSubscription = await prisma.subscription.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: req.body // Caution: Validate body in production
     });
 
@@ -136,7 +136,7 @@ export const updateSubscription = async (req: AuthRequest, res: Response, next: 
 // Cancel subscription
 export const cancelSubscription = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const subscription = await prisma.subscription.findUnique({ where: { id: req.params.id } });
+    const subscription = await prisma.subscription.findUnique({ where: { id: String(req.params.id) } });
 
     if (!subscription) {
       return res.status(404).json({

@@ -20,7 +20,7 @@ export const getCampaigns = async (req: AuthRequest, res: Response) => {
 export const getCampaign = async (req: AuthRequest, res: Response) => {
     try {
         const campaign = await prisma.campaign.findFirst({
-            where: { id: req.params.id, userId: req.user?.id }
+            where: { id: String(req.params.id), userId: req.user?.id }
         });
         if (!campaign) {
             return res.status(404).json({ success: false, message: 'Campaign not found' });
@@ -57,7 +57,7 @@ export const updateCampaign = async (req: AuthRequest, res: Response) => {
     try {
         // First check existence and ownership
         const existing = await prisma.campaign.findFirst({
-            where: { id: req.params.id, userId: req.user?.id }
+            where: { id: String(req.params.id), userId: req.user?.id }
         });
 
         if (!existing) {
@@ -65,7 +65,7 @@ export const updateCampaign = async (req: AuthRequest, res: Response) => {
         }
 
         const campaign = await prisma.campaign.update({
-            where: { id: req.params.id },
+            where: { id: String(req.params.id) },
             data: req.body
         });
         res.json({ success: true, data: campaign });
@@ -79,7 +79,7 @@ export const updateCampaign = async (req: AuthRequest, res: Response) => {
 export const deleteCampaign = async (req: AuthRequest, res: Response) => {
     try {
         const existing = await prisma.campaign.findFirst({
-            where: { id: req.params.id, userId: req.user?.id }
+            where: { id: String(req.params.id), userId: req.user?.id }
         });
 
         if (!existing) {
@@ -87,7 +87,7 @@ export const deleteCampaign = async (req: AuthRequest, res: Response) => {
         }
 
         await prisma.campaign.delete({
-            where: { id: req.params.id }
+            where: { id: String(req.params.id) }
         });
         res.json({ success: true, message: 'Campaign deleted' });
     } catch (error) {
@@ -100,12 +100,12 @@ export const deleteCampaign = async (req: AuthRequest, res: Response) => {
 export const launchCampaign = async (req: AuthRequest, res: Response) => {
     try {
         const existing = await prisma.campaign.findFirst({
-            where: { id: req.params.id, userId: req.user?.id }
+            where: { id: String(req.params.id), userId: req.user?.id }
         });
         if (!existing) return res.status(404).json({ success: false, message: 'Campaign not found' });
 
         const campaign = await prisma.campaign.update({
-            where: { id: req.params.id },
+            where: { id: String(req.params.id) },
             data: { status: 'active' }
         });
         res.json({ success: true, data: campaign, message: 'Campaign launched!' });
@@ -119,12 +119,12 @@ export const launchCampaign = async (req: AuthRequest, res: Response) => {
 export const pauseCampaign = async (req: AuthRequest, res: Response) => {
     try {
         const existing = await prisma.campaign.findFirst({
-            where: { id: req.params.id, userId: req.user?.id }
+            where: { id: String(req.params.id), userId: req.user?.id }
         });
         if (!existing) return res.status(404).json({ success: false, message: 'Campaign not found' });
 
         const campaign = await prisma.campaign.update({
-            where: { id: req.params.id },
+            where: { id: String(req.params.id) },
             data: { status: 'paused' }
         });
         res.json({ success: true, data: campaign, message: 'Campaign paused' });
@@ -138,12 +138,12 @@ export const pauseCampaign = async (req: AuthRequest, res: Response) => {
 export const resumeCampaign = async (req: AuthRequest, res: Response) => {
     try {
         const existing = await prisma.campaign.findFirst({
-            where: { id: req.params.id, userId: req.user?.id }
+            where: { id: String(req.params.id), userId: req.user?.id }
         });
         if (!existing) return res.status(404).json({ success: false, message: 'Campaign not found' });
 
         const campaign = await prisma.campaign.update({
-            where: { id: req.params.id },
+            where: { id: String(req.params.id) },
             data: { status: 'active' }
         });
         res.json({ success: true, data: campaign, message: 'Campaign resumed' });

@@ -30,7 +30,7 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
 // Get single user
 export const getUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const userId = req.params.id || req.user.id;
+    const userId = String(req.params.id) || req.user.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { subscription: true }
@@ -58,7 +58,7 @@ export const getUser = async (req: AuthRequest, res: Response, next: NextFunctio
 // Update user
 export const updateUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const userId = req.params.id || req.user.id;
+    const userId = String(req.params.id) || req.user.id;
 
     // In strict Prisma, we update specific fields. 
     // Mongoose allowed loose objects for updates if schema matched.
@@ -106,7 +106,7 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
 export const deleteUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
     await prisma.user.delete({
-      where: { id: req.params.id }
+      where: { id: String(req.params.id) }
     });
 
     res.status(200).json({

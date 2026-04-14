@@ -157,7 +157,7 @@ UserSchema.pre('save', async function (next) {
 UserSchema.methods.getSignedJwtToken = function (): string {
   return jwt.sign(
     { id: this._id, email: this.email },
-    process.env.JWT_SECRET as string,
+    process.env.JWT_SECRET as any,
     {
       expiresIn: process.env.JWT_EXPIRE || '7d'
     } as any
@@ -168,7 +168,7 @@ UserSchema.methods.getSignedJwtToken = function (): string {
 UserSchema.methods.getRefreshToken = function (): string {
   return jwt.sign(
     { id: this._id, email: this.email },
-    process.env.JWT_REFRESH_SECRET as string,
+    process.env.JWT_REFRESH_SECRET as any,
     {
       expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d'
     } as any

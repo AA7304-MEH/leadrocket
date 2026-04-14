@@ -12,17 +12,6 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tsconfigPaths(),
-    {
-      name: 'diagnostic-resolver',
-      resolveId(source, importer) {
-        if (source.includes('@/') || source.startsWith('.')) {
-          // Log only local/aliased imports to avoid noise
-          const fs = require('fs');
-          fs.appendFileSync('resolution_log.txt', `Resolving: ${source} from ${importer}\n`);
-        }
-        return null;
-      }
-    }
   ],
   resolve: {
     alias: {
