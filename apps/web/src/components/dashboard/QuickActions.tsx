@@ -1,38 +1,45 @@
 import { motion } from "framer-motion";
 import { Plus, Download, BarChart3, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const actions = [
-  {
-    title: "New Campaign",
-    description: "Create AI-powered sequence",
-    icon: Plus,
-    color: "blue"
-  },
-  {
-    title: "Import Leads",
-    description: "Upload CSV or sync CRM",
-    icon: Download,
-    color: "emerald"
-  },
-  {
-    title: "View Analytics",
-    description: "Deep dive into performance",
-    icon: BarChart3,
-    color: "amber"
-  },
-  {
-    title: "Invite Team",
-    description: "Collaborate with others",
-    icon: UserPlus,
-    color: "purple"
-  }
-];
+import { useRBAC } from "@/hooks/useRBAC";
 
 export default function QuickActions() {
+  const { can } = useRBAC();
+
+  const actions = [
+    {
+      title: "New Campaign",
+      description: "Create AI-powered sequence",
+      icon: Plus,
+      color: "blue",
+      visible: true
+    },
+    {
+      title: "Import Leads",
+      description: "Upload CSV or sync CRM",
+      icon: Download,
+      color: "emerald",
+      visible: true
+    },
+    {
+      title: "View Analytics",
+      description: "Deep dive into performance",
+      icon: BarChart3,
+      color: "amber",
+      visible: true
+    },
+    {
+      title: "Invite Team",
+      description: "Collaborate with others",
+      icon: UserPlus,
+      color: "purple",
+      visible: can('manager')
+    }
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
-      {actions.map((action, index) => (
+      {actions.filter(a => a.visible).map((action, index) => (
         <motion.div
           key={index}
           initial={{ opacity: 0, y: 20 }}

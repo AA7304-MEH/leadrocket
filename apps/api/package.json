@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node --transpile-only src/server.ts",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=2048 nodemon --exec ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "jest",
@@ -65,6 +65,7 @@
     "@types/nodemailer": "^7.0.2",
     "@types/prop-types": "^15.7.15",
     "@types/supertest": "^6.0.3",
+    "cross-env": "^10.1.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.10",
     "prisma": "5.22.0",

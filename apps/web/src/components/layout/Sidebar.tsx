@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRBAC } from "@/hooks/useRBAC";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -32,6 +34,13 @@ const navItems = [
     { name: "Settings", href: "/settings", icon: Settings },
 ];
 
+const planColors: Record<string, string> = {
+  free: 'bg-gray-500',
+  starter: 'bg-blue-500',
+  pro: 'bg-purple-500',
+  agency: 'bg-amber-500',
+};
+
 interface SidebarProps {
     className?: string;
 }
@@ -40,6 +49,7 @@ const Sidebar = ({ className }: SidebarProps) => {
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
     const { user } = useAuth();
+    const { isAdmin, can } = useRBAC();
 
     return (
         <aside
@@ -97,6 +107,46 @@ const Sidebar = ({ className }: SidebarProps) => {
                         </Link>
                     );
                 })}
+
+                {can('manager') && (
+                  <Link
+                      to="/team"
+                      className={cn(
+                          "flex items-center gap-4 px-4 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 group relative",
+                          location.pathname.startsWith("/team")
+                              ? "bg-white/5 text-white shadow-2xl border border-white/5"
+                              : "text-slate-500 hover:text-white hover:bg-white/[0.02]"
+                      )}
+                  >
+                      <Users className={cn(
+                          "w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110",
+                          location.pathname.startsWith("/team") ? "text-blue-500" : "text-slate-600 group-hover:text-slate-300"
+                      )} />
+                      {!collapsed && (
+                          <span className="flex-1 truncate">Team</span>
+                      )}
+                  </Link>
+                )}
+
+                {isAdmin && (
+                  <Link
+                      to="/admin"
+                      className={cn(
+                          "flex items-center gap-4 px-4 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 group relative",
+                          location.pathname.startsWith("/admin")
+                              ? "bg-white/5 text-white shadow-2xl border border-white/5"
+                              : "text-slate-500 hover:text-white hover:bg-white/[0.02]"
+                      )}
+                  >
+                      <Shield className={cn(
+                          "w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110",
+                          location.pathname.startsWith("/admin") ? "text-blue-500" : "text-slate-600 group-hover:text-slate-300"
+                      )} />
+                      {!collapsed && (
+                          <span className="flex-1 truncate">Admin</span>
+                      )}
+                  </Link>
+                )}
             </nav>
 
             {/* User Profile */}
@@ -115,8 +165,8 @@ const Sidebar = ({ className }: SidebarProps) => {
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-black text-white truncate tracking-tight uppercase">{user?.email?.split('@')[0] || "Founders"}</p>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                                <Badge variant="secondary" className="px-2 py-0 h-4 text-[9px] font-black uppercase tracking-[0.2em] bg-blue-600/10 text-blue-500 border-none">
-                                    PRO
+                                <Badge variant="secondary" className={cn("px-2 py-0 h-4 text-[9px] font-black uppercase tracking-[0.2em] border-none text-white", planColors[user?.plan || 'free'])}>
+                                    {user?.plan ?? 'free'}
                                 </Badge>
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                             </div>

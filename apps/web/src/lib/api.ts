@@ -41,6 +41,22 @@ export const authApi = {
 };
 
 // ==================== LEADS ====================
+export interface CompetitorInsights {
+  detectedCompetitors: string[]
+  mentionContext: string
+  counterStrategies: string[]
+  severity: 'low' | 'medium' | 'high'
+  detectedAt: string
+}
+
+export interface CompetitorLead {
+  id: string
+  contactName: string
+  companyName: string
+  competitorInsights: CompetitorInsights | null
+  updatedAt: string
+}
+
 export interface Lead {
     _id: string;
     firstName: string;
@@ -55,6 +71,10 @@ export interface Lead {
 
 export const leadsApi = {
     getAll: () => api.get<{ success: boolean; count: number; data: Lead[] }>('/leads'),
+    getCompetitorAlerts: async (): Promise<CompetitorLead[]> => {
+        const response = await api.get('/leads/competitors')
+        return response.data?.data ?? response.data ?? []
+    },
     getById: (id: string) => api.get<{ success: boolean; data: Lead }>(`/leads/${id}`),
     create: (data: Partial<Lead>) => api.post<{ success: boolean; data: Lead }>('/leads', data),
     update: (id: string, data: Partial<Lead>) => api.put<{ success: boolean; data: Lead }>(`/leads/${id}`, data),

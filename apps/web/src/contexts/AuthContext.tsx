@@ -1,116 +1,94 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Session, User } from '@supabase/supabase-js';
 
-export interface UserProfile {
+export interface User {
   id: string;
-  full_name: string | null;
-  company_name: string | null;
-  avatar_url: string | null;
-  plan: 'starter' | 'pro' | 'agency';
-  ai_credits: number;
-  referral_code: string | null;
-  referred_by: string | null;
-  onboarding_completed: boolean;
-  created_at: string;
-  updated_at: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'manager' | 'member';
+  plan: 'free' | 'starter' | 'pro' | 'agency';
+  companyId?: string;
 }
 
 interface AuthContextType {
-  session: Session | null;
   user: User | null;
-  profile: UserProfile | null;
+  token: string | null;
+  role: 'admin' | 'manager' | 'member' | null;
   loading: boolean;
+  isAuthenticated: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [role, setRole] = useState<'admin' | 'manager' | 'member' | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const isAuthenticated = !!user && !!token;
+
   useEffect(() => {
-    // 1. Check initial session
-    const initAuth = async () => {
+    const savedToken = localStorage.getItem('lr_token')
+    if (!savedToken) {
+      setLoading(false)
+      return
+    }
+
+    async function verifySession() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/auth/me`,
+          { headers: { Authorization: `Bearer ${savedToken}` } }
+        )
+        if (!res.ok) throw new Error('Invalid token')
+        const userData = await res.json()
+        setUser(userData)
+        setToken(savedToken)
+        setRole(userData.role)
+      } catch {
+        localStorage.removeItem('lr_token')
+        setUser(null)
+        setToken(null)
+        setRole(null)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    initAuth();
+    verifySession()
+  }, [])
 
-    // 2. Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
+  async function signIn(email: string, password: string) {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/auth/login`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchProfile = async (userId: string, attempts = 3): Promise<void> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        if (attempts > 1) {
-          console.log(`Profile not found, retrying... (${attempts - 1} attempts left)`);
-          await new Promise(resolve => setTimeout(resolve, 500));
-          return fetchProfile(userId, attempts - 1);
-        }
-        throw error;
-      }
-      
-      setProfile(data as UserProfile);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    )
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.message ?? 'Login failed')
     }
-  };
+    const { token: newToken, user: userData } = await res.json()
+    localStorage.setItem('lr_token', newToken)
+    setToken(newToken)
+    setUser(userData)
+    setRole(userData.role)
+  }
 
-  const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setSession(null);
-      setUser(null);
-      setProfile(null);
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
+  async function signOut() {
+    localStorage.removeItem('lr_token')
+    setToken(null)
+    setUser(null)
+    setRole(null)
+  }
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, token, role, loading, isAuthenticated, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

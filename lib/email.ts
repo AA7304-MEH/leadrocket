@@ -15,18 +15,42 @@ export class EmailService {
     static async sendBulkEmails(leads: any[], campaign: any) {
         let sent = 0;
         let failed = 0;
+        const appUrl = process.env.APP_URL || 'https://leadrockets.vercel.app';
 
         for (const lead of leads) {
             try {
-                const personalizedBody = this.personalize(campaign.body || campaign.sequenceFlow || '', lead);
+                let personalizedBody = this.personalize(campaign.body || campaign.sequenceFlow || '', lead);
                 const personalizedSubject = this.personalize(campaign.subject_line || '', lead);
+
+                // 1. Wrap links for click tracking
+                const clickTrackingBase = `${appUrl}/api/track/click/${campaign.id}/${lead.id}?url=`;
+                personalizedBody = personalizedBody.replace(/href="([^"]+)"/g, (match, url) => {
+                    // Avoid tracking the unsubscribe link or already tracked links
+                    if (url.includes('/api/unsubscribe') || url.includes('/api/track/click')) return match;
+                    return `href="${clickTrackingBase}${encodeURIComponent(url)}"`;
+                });
+
+                // 2. Add tracking pixel
+                const trackingPixel = `<img src="${appUrl}/api/track/open/${campaign.id}/${lead.id}" width="1" height="1" style="display:none !important;" />`;
+                
+                // 3. Add unsubscribe footer
+                const unsubscribeUrl = `${appUrl}/api/unsubscribe/${lead.id}`;
+                const footer = `
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
+                        Don't want these emails? <a href="${unsubscribeUrl}" style="color: #3B82F6; text-decoration: underline;">Unsubscribe</a>
+                        <br/>
+                        Built with LeadRockets.
+                    </div>
+                `;
+
+                const htmlBody = personalizedBody.replace(/\n/g, '<br>') + trackingPixel + footer;
 
                 await this.transporter.sendMail({
                     from: `"LeadRockets" <${process.env.SMTP_USER}>`,
                     to: lead.email,
                     subject: personalizedSubject,
-                    text: personalizedBody,
-                    html: personalizedBody.replace(/\n/g, '<br>'),
+                    text: personalizedBody.replace(/<[^>]*>/g, '') + `\n\nUnsubscribe: ${unsubscribeUrl}`, // Plain text version
+                    html: htmlBody,
                 });
                 sent++;
             } catch (error) {

@@ -36,6 +36,8 @@ import abTestRoutes from './routes/abTestRoutes';
 import senderRoutes from './routes/senderRoutes';
 import growthRoutes from './routes/growthRoutes';
 import gamificationRoutes from './routes/gamificationRoutes';
+import cronRoutes from './routes/cron';
+import trackingRoutes from './routes/tracking';
 
 dotenv.config();
 
@@ -116,6 +118,12 @@ app.use('/api/ab-tests', abTestRoutes);
 app.use('/api/senders', senderRoutes);
 app.use('/api/growth', growthRoutes);
 app.use('/api/gamification', gamificationRoutes);
+app.use('/api/cron', cronRoutes);
+app.use('/api/track', trackingRoutes);
+app.use('/api/unsubscribe', (req, res, next) => {
+  // Direct access for unsubscribe links
+  next();
+}, trackingRoutes);
 
 // Error handling middleware
 app.use(notFound);

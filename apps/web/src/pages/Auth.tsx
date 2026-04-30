@@ -23,6 +23,7 @@ const Auth: React.FC = () => {
   });
   const [passwordStrength, setPasswordStrength] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isReset = searchParams.get('reset') === 'true';
 
@@ -60,6 +61,8 @@ const Auth: React.FC = () => {
             .eq('id', authData.user.id)
             .single();
 
+          const from = (location.state as any)?.from?.pathname ?? '/dashboard';
+
           if (profileError) {
             console.error('Profile fetch error:', profileError);
             navigate('/onboarding');
@@ -67,7 +70,7 @@ const Auth: React.FC = () => {
           }
 
           if (profile?.onboarding_completed) {
-            navigate('/dashboard');
+            navigate(from, { replace: true });
           } else {
             navigate('/onboarding');
           }

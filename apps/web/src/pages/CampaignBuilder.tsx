@@ -162,7 +162,20 @@ export default function CampaignBuilder() {
         navigate("/campaigns");
       }
     } catch (err: any) {
-      toast.error(`Launch aborted: ${err.message}`);
+      const errorMsg = err.response?.data?.error || err.message;
+      const errorCode = err.response?.data?.code;
+
+      if (errorCode === 'LIMIT_EXCEEDED') {
+        toast.error("You've reached your plan limit — upgrade to send more", {
+          action: {
+            label: "Upgrade",
+            onClick: () => navigate("/billing")
+          },
+          duration: 6000
+        });
+      } else {
+        toast.error(`Launch aborted: ${errorMsg}`);
+      }
     } finally {
       setIsSending(false);
     }

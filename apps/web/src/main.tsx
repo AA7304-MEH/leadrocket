@@ -24,10 +24,6 @@ const LoadingScreen = () => (
 );
 
 const Root = () => {
-  const { loading } = useAuth();
-
-  if (loading) return <LoadingScreen />;
-
   return (
     <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID }}>
       <App />

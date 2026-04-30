@@ -60,6 +60,24 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Environment Variables
+
+The following environment variables are required for full functionality:
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Supabase / PostgreSQL connection string |
+| `DIRECT_URL` | Direct connection string for Prisma migrations |
+| `JWT_SECRET` | Secret key for JWT signing |
+| `SMTP_HOST` | SMTP server host |
+| `SMTP_PORT` | SMTP server port (usually 587 or 465) |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASS` | SMTP password |
+| `CRON_SECRET` | Secret key for Vercel Cron jobs |
+| `APP_URL` | The public URL of the application (e.g., https://leadrockets.vercel.app) |
+| `VITE_APP_URL` | Same as APP_URL, prefixed for frontend access |
+| `GEMINI_API_KEY` | Google Gemini API key for AI features |
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/9f1aeb1a-373c-45e6-a26b-889c9cc3e156) and click on Share -> Publish.

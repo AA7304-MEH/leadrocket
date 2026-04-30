@@ -49,6 +49,44 @@ export class EmailService {
     }
   }
 
+  // Send bulk emails for a campaign
+  static async sendBulkEmails(leads: any[], campaign: any): Promise<{ sent: number; failed: number }> {
+    let sent = 0;
+    let failed = 0;
+
+    for (const lead of leads) {
+      try {
+        const trackingPixel = `<img src="${process.env.VITE_API_URL}/api/track/open/${campaign.id}?leadId=${lead.id}" width="1" height="1" style="display:none" />`;
+        const unsubscribeLink = `<div style="margin-top: 20px; font-size: 12px; color: #666;">
+          <a href="${process.env.VITE_API_URL}/api/unsubscribe/${lead.id}">Unsubscribe</a>
+        </div>`;
+
+        // Simple template replacement (can be more complex)
+        let html = campaign.content || '';
+        html = html.replace(/{{name}}/g, lead.contactName || 'there');
+        html = html.replace(/{{company}}/g, lead.companyName || 'your company');
+        
+        const fullHtml = `
+          ${html}
+          ${trackingPixel}
+          ${unsubscribeLink}
+        `;
+
+        await this.sendEmail({
+          to: lead.email,
+          subject: campaign.subject || campaign.name,
+          html: fullHtml
+        });
+        sent++;
+      } catch (error) {
+        console.error(`Failed to send email to ${lead.email}:`, error);
+        failed++;
+      }
+    }
+
+    return { sent, failed };
+  }
+
   // Welcome email template
   static async sendWelcomeEmail(userEmail: string, userName: string): Promise<any> {
     const subject = 'Welcome to Lead Rockets! 🚀';

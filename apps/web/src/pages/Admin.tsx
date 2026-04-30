@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRBAC } from '@/hooks/useRBAC';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 interface User {
@@ -17,6 +19,7 @@ interface User {
 
 const Admin: React.FC = () => {
   const { user } = useAuth();
+  const { isAdmin } = useRBAC();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,12 +29,12 @@ const Admin: React.FC = () => {
       navigate('/login');
       return;
     }
-    if (user.role !== 'admin') {
+    if (!isAdmin) {
       navigate('/dashboard');
       return;
     }
     fetchUsers();
-  }, [user, navigate]);
+  }, [user, isAdmin, navigate]);
 
   const fetchUsers = async () => {
     try {
@@ -94,6 +97,7 @@ const Admin: React.FC = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Joined</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -107,6 +111,18 @@ const Admin: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        {isAdmin && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => toast.info(`Viewing ${u.name}`)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => toast.error(`Deleting ${u.name}`)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
