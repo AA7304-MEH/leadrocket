@@ -81,8 +81,8 @@ export const getSenders = async (req: Request, res: Response) => {
  */
 export const getSender = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const sender = senders[id];
+        const id = String(req.params.id);
+        const sender = (senders as any)[id];
 
         if (!sender) {
             return res.status(404).json({ success: false, error: 'Sender not found' });
@@ -111,8 +111,8 @@ export const getSender = async (req: Request, res: Response) => {
  */
 export const pauseSender = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const sender = senders[id];
+        const id = String(req.params.id);
+        const sender = (senders as any)[id];
 
         if (!sender) {
             return res.status(404).json({ success: false, error: 'Sender not found' });
@@ -130,8 +130,8 @@ export const pauseSender = async (req: Request, res: Response) => {
  */
 export const resumeSender = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const sender = senders[id];
+        const id = String(req.params.id);
+        const sender = (senders as any)[id];
 
         if (!sender) {
             return res.status(404).json({ success: false, error: 'Sender not found' });
@@ -149,14 +149,14 @@ export const resumeSender = async (req: Request, res: Response) => {
  */
 export const disconnectSender = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = String(req.params.id);
 
-        if (!senders[id]) {
+        if (!(senders as any)[id]) {
             return res.status(404).json({ success: false, error: 'Sender not found' });
         }
 
-        delete senders[id];
-        delete warmupProgress[id];
+        delete (senders as any)[id];
+        delete (warmupProgress as any)[id];
 
         res.json({ success: true, message: 'Sender disconnected' });
     } catch (error: any) {
@@ -169,8 +169,8 @@ export const disconnectSender = async (req: Request, res: Response) => {
  */
 export const getSenderStats = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const sender = senders[id];
+        const id = String(req.params.id);
+        const sender = (senders as any)[id];
 
         if (!sender) {
             return res.status(404).json({ success: false, error: 'Sender not found' });

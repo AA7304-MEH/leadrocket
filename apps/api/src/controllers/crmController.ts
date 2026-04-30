@@ -6,9 +6,8 @@ import { CRMService } from '../services/crmService';
 // Sync single lead to CRMs
 export const syncLeadToCRM = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const { leadId } = req.params;
-
-    const result = await CRMService.syncLeadToCRMs(leadId, req.user);
+    const id = String(req.params.leadId);
+    const result = await CRMService.syncLeadToCRMs(id, req.user);
 
     res.status(200).json({
       success: true,
@@ -47,11 +46,8 @@ export const bulkSyncToCRM = async (req: AuthRequest, res: Response, next: NextF
 // Get CRM sync status for a lead
 export const getCRMSyncStatus = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const { leadId } = req.params;
-
-    // This would typically check the actual CRM APIs for sync status
-    // For now, we'll return the stored CRM data
-    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+    const id = String(req.params.leadId);
+    const lead = await prisma.lead.findUnique({ where: { id: id } });
 
     if (!lead) {
       return res.status(404).json({
@@ -63,7 +59,7 @@ export const getCRMSyncStatus = async (req: AuthRequest, res: Response, next: Ne
     res.status(200).json({
       success: true,
       data: {
-        leadId,
+        id,
         crmData: lead.crmData,
         lastSynced: lead.updatedAt,
         syncStatus: lead.crmData ? 'synced' : 'not_synced'

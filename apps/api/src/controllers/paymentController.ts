@@ -67,9 +67,8 @@ export const processPayment = async (req: AuthRequest, res: Response, next: Next
 // Cancel subscription
 export const cancelSubscription = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const { subscriptionId } = req.params;
-
-    const result = await PaymentService.cancelSubscription(req.user, subscriptionId);
+    const id = String(req.params.subscriptionId);
+    const result = await PaymentService.cancelSubscription(req.user, id);
 
     res.status(200).json({
       success: true,

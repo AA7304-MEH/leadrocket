@@ -55,7 +55,7 @@ export const unsubscribe = async (req: Request, res: Response) => {
 
   try {
     await prisma.lead.update({
-      where: { id: leadId },
+      where: { id: String(leadId) },
       data: { status: 'unsubscribed' }
     });
 

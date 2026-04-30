@@ -1,5 +1,5 @@
 
-import { ILead } from '../models/Lead';
+// import { ILead } from '../models/Lead';
 
 interface ScoringResult {
     score: number;

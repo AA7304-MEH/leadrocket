@@ -11,8 +11,7 @@ import { SkipLink } from "@/components/accessibility/a11y";
 
 // Page imports
 import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import Campaigns from "./pages/Campaigns";
@@ -21,11 +20,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import Pricing from "./pages/Pricing";
-import CaseStudies from "./pages/CaseStudies";
 import Templates from "./pages/Templates";
-import Blog from "./pages/Blog";
-import Compare from "./pages/Compare";
-import About from "./pages/About";
 import Onboarding from "./pages/Onboarding";
 import CoachingDashboard from "./pages/CoachingDashboard";
 import IntegrationBuilder from "./pages/IntegrationBuilder";
@@ -75,15 +70,11 @@ const AppRouter = () => {
           {/* Public Routes */}
           <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />} />
           <Route path="/pricing" element={<Pricing />} />
-          <Route path="/case-studies" element={<CaseStudies />} />
           <Route path="/templates" element={<Templates />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/compare" element={<Compare />} />
-          <Route path="/about" element={<About />} />
 
           {/* Auth Routes */}
-          <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
-          <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Auth />} />
+          <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Auth />} />
           <Route path="/onboarding" element={<Onboarding />} />
 
           {/* Dashboard Routes */}

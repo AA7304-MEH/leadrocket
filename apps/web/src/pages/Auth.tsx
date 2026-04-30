@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Zap, Chrome, Loader2, Sparkles, TrendingUp, Users } from 'lucide-react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const generateCode = () => Math.random().toString(36).substring(2,10).toUpperCase();

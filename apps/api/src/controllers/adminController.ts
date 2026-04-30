@@ -98,15 +98,11 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
 // Update user (admin only)
 export const updateUserAdmin = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const { userId } = req.params;
+    const id = String(req.params.userId);
     const updates = req.body;
-
-    // Remove fields that shouldn't be updated directly by admin
-    delete updates.password;
-    delete updates._id;
-
+    
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: { id: id },
       data: updates
     });
 
@@ -133,14 +129,14 @@ export const updateUserAdmin = async (req: AuthRequest, res: Response, next: Nex
 // Delete user (admin only)
 export const deleteUserAdmin = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const { userId } = req.params;
+    const id = String(req.params.userId);
 
     // Delete user's leads and subscription (Prisma might handle cascade delete if configured in schema)
     // Explicitly deleting to be safe and match logic
-    await prisma.lead.deleteMany({ where: { userId } });
-    await prisma.subscription.deleteMany({ where: { userId } });
+    await prisma.lead.deleteMany({ where: { userId: id } });
+    await prisma.subscription.deleteMany({ where: { userId: id } });
 
-    await prisma.user.delete({ where: { id: userId } });
+    await prisma.user.delete({ where: { id: id } });
 
     res.status(200).json({
       success: true,

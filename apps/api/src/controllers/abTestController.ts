@@ -96,8 +96,8 @@ export const getABTests = async (req: Request, res: Response) => {
  */
 export const getABTest = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const test = abTests[id];
+        const id = String(req.params.id);
+        const test = (abTests as any)[id];
 
         if (!test) {
             return res.status(404).json({ success: false, error: 'A/B test not found' });
@@ -114,8 +114,8 @@ export const getABTest = async (req: Request, res: Response) => {
  */
 export const startABTest = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const test = abTests[id];
+        const id = String(req.params.id);
+        const test = (abTests as any)[id];
 
         if (!test) {
             return res.status(404).json({ success: false, error: 'A/B test not found' });
@@ -143,8 +143,8 @@ export const startABTest = async (req: Request, res: Response) => {
  */
 export const stopABTest = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const test = abTests[id];
+        const id = String(req.params.id);
+        const test = (abTests as any)[id];
 
         if (!test) {
             return res.status(404).json({ success: false, error: 'A/B test not found' });
@@ -186,8 +186,8 @@ export const stopABTest = async (req: Request, res: Response) => {
  */
 export const getABTestResults = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const test = abTests[id];
+        const id = String(req.params.id);
+        const test = (abTests as any)[id];
 
         if (!test) {
             return res.status(404).json({ success: false, error: 'A/B test not found' });
@@ -223,13 +223,13 @@ export const getABTestResults = async (req: Request, res: Response) => {
  */
 export const deleteABTest = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = String(req.params.id);
 
-        if (!abTests[id]) {
+        if (!(abTests as any)[id]) {
             return res.status(404).json({ success: false, error: 'A/B test not found' });
         }
 
-        delete abTests[id];
+        delete (abTests as any)[id];
         res.json({ success: true, message: 'A/B test deleted' });
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });

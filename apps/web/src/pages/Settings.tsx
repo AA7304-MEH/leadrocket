@@ -4,7 +4,7 @@ import {
   User, Link2, Bell, Key, Users, AlertTriangle, 
   Upload, Check, Shield, Globe, Mail, 
   ExternalLink, Zap, Info, ShieldCheck, ChevronRight,
-  Sparkles
+  Sparkles, Loader2, Save, Building, Lock, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle 
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("profile");
