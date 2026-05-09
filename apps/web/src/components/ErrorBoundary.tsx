@@ -1,6 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 
 interface Props {
   children?: ReactNode;
@@ -13,7 +13,7 @@ interface State {
 
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
-    hasError: false,
+    hasError: false
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -27,42 +27,36 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_#1a1a1a,_transparent_30%),_radial-gradient(circle_at_bottom_left,_#111,_transparent_30%)]">
-          <div className="max-w-md w-full bg-[#111] border border-white/5 p-12 rounded-[40px] text-center space-y-8 shadow-2xl">
-            <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-10 h-10 text-red-500" />
-            </div>
-            
-            <div className="space-y-2">
-              <h1 className="text-3xl font-black tracking-tighter text-white">Something went wrong</h1>
-              <p className="text-sm font-medium text-slate-500 leading-relaxed italic">
-                {this.state.error?.message || "An unexpected error occurred. Our engineers have been notified."}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 pt-4">
-              <Button 
+        <div className="h-screen w-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mb-8 ring-4 ring-red-500/20">
+            <AlertTriangle className="w-12 h-12 text-red-500" />
+          </div>
+          <h1 className="text-4xl font-black text-white tracking-tighter mb-4">Something went wrong</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mb-12 max-w-md">
+            Our engines encountered an unexpected turbulence. We've been notified and are working on a fix.
+          </p>
+          <div className="flex gap-4">
+            <Button 
                 onClick={() => window.location.reload()}
-                className="h-14 rounded-2xl bg-white text-black hover:bg-slate-200 font-bold uppercase tracking-widest text-xs gap-2"
-              >
+                className="bg-white text-black h-12 rounded-xl px-8 font-black uppercase tracking-widest text-[10px] gap-2"
+            >
                 <RefreshCcw className="w-4 h-4" />
-                Retry Connection
-              </Button>
-              <Button 
-                variant="ghost"
+                Retry System
+            </Button>
+            <Button 
                 onClick={() => window.location.href = '/'}
-                className="h-14 rounded-2xl text-slate-500 hover:text-white font-bold uppercase tracking-widest text-xs gap-2"
-              >
+                variant="outline"
+                className="border-white/10 text-white h-12 rounded-xl px-8 font-black uppercase tracking-widest text-[10px] gap-2"
+            >
                 <Home className="w-4 h-4" />
                 Return Home
-              </Button>
-            </div>
+            </Button>
           </div>
         </div>
       );
     }
 
-    return this.props.children;
+    return this.children;
   }
 }
 

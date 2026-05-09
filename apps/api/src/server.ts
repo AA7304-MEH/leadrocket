@@ -3,7 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import * as Sentry from '@sentry/node';
 import { connectDB } from './utils/database';
@@ -19,10 +18,9 @@ import adminRoutes from './routes/admin';
 import analyticsRoutes from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
-// @ts-ignore
-import xss from 'xss-clean';
+// import xss from 'xss-clean';
 import hpp from 'hpp';
-import aiRoutes from './routes/aiRoutes';
+import aiRouter from './routes/ai';
 import deliverabilityRoutes from './routes/deliverabilityRoutes';
 import verifyRoutes from './routes/verifyRoutes';
 import campaignRoutes from './routes/campaignRoutes';
@@ -34,10 +32,13 @@ import complianceRoutes from './routes/complianceRoutes';
 import razorpayRoutes from './routes/razorpayRoutes';
 import abTestRoutes from './routes/abTestRoutes';
 import senderRoutes from './routes/senderRoutes';
-import growthRoutes from './routes/growthRoutes';
-import gamificationRoutes from './routes/gamificationRoutes';
+// import growthRoutes from './routes/growthRoutes';
+// import gamificationRoutes from './routes/gamificationRoutes';
 import cronRoutes from './routes/cron';
 import trackingRoutes from './routes/tracking';
+import referralsRouter from './routes/referrals';
+import marketplaceRouter from './routes/marketplace';
+import { apiLimiter } from './middleware/rateLimiter';
 
 dotenv.config();
 
@@ -57,25 +58,18 @@ const PORT = process.env.PORT || 5000;
 
 // Security middleware
 app.use(helmet());
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-});
-app.use(limiter);
-
-// Compression middleware
-app.use(compression());
-
-// CORS configuration
 app.use(cors({
   origin: [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:3000', 'http://localhost:3001'],
   credentials: true
 }));
 
-// Body parsing middleware
+// Rate limiting
+app.use('/api/', apiLimiter);
+
+// Compression middleware
+app.use(compression());
+
+// Body parsing
 app.use(express.json());
 
 // Dev logging middleware
@@ -84,7 +78,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Data sanitization against XSS
-app.use(xss());
+// app.use(xss());
 
 // Prevent HTTP parameter pollution
 app.use(hpp());
@@ -104,7 +98,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/api/ai', aiRouter);
 app.use('/api/deliverability', deliverabilityRoutes);
 app.use('/api/verify', verifyRoutes);
 app.use('/api/campaigns', campaignRoutes);
@@ -116,10 +110,12 @@ app.use('/api/compliance', complianceRoutes);
 app.use('/api/razorpay', razorpayRoutes);
 app.use('/api/ab-tests', abTestRoutes);
 app.use('/api/senders', senderRoutes);
-app.use('/api/growth', growthRoutes);
-app.use('/api/gamification', gamificationRoutes);
+// app.use('/api/growth', growthRoutes);
+// app.use('/api/gamification', gamificationRoutes);
 app.use('/api/cron', cronRoutes);
 app.use('/api/track', trackingRoutes);
+app.use('/api/referrals', referralsRouter);
+app.use('/api/marketplace', marketplaceRouter);
 app.use('/api/unsubscribe', (req, res, next) => {
   // Direct access for unsubscribe links
   next();
@@ -143,9 +139,6 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-      console.log('🔗 API endpoints available:');
-      console.log('   - Health check: http://localhost:5000/health');
-      console.log('   - API base: http://localhost:5000/api');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

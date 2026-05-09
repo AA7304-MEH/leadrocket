@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../middleware/auth';
 import mockUserStore from '../utils/mockUserStore';
+import { ReferralService } from '../services/ReferralService';
+
+const referralService = new ReferralService();
 
 // Helper to sign JWT
 const getSignedJwtToken = (id: string, email: string) => {
@@ -21,7 +24,7 @@ const getRefreshToken = (id: string, email: string) => {
 // Register user
 export const register = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, referralCode } = req.body;
 
     // Check if user exists
     const existingUser = await mockUserStore.findByEmail(email);
@@ -38,6 +41,11 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 
     // Update last login
     await mockUserStore.updateLastLogin(user.id);
+
+    // Process referral if ref code present
+    if (referralCode) {
+      await referralService.processReferralSignup(referralCode, user.id, user.email);
+    }
 
     // Generate tokens
     const accessToken = getSignedJwtToken(user.id, user.email);

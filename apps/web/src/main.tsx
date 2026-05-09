@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import App from './App'
 import './index.css'
 import { Rocket } from 'lucide-react'
+import ErrorBoundary from './components/ErrorBoundary'
 import { Toaster } from 'sonner'
 
 const LoadingScreen = () => (
@@ -36,7 +37,9 @@ const container = document.getElementById("root");
 if (container) {
   createRoot(container).render(
     <AuthProvider>
-      <Root />
+      <ErrorBoundary>
+        <Root />
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

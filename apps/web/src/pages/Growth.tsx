@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
     Rocket, 
-    Users, 
-    Zap, 
     Share2, 
     Copy, 
     Twitter, 
     Linkedin, 
     MessageCircle, 
-    Mail, 
-    TrendingUp, 
     Trophy,
     CheckCircle2,
-    ArrowRight,
     Star,
+    Zap,
+    TrendingUp,
+    Users,
     Clock
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -23,105 +21,144 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
-import RewardsLadder from '@/components/growth/RewardsLadder';
-import ReferralFeed from '@/components/growth/ReferralFeed';
+import { useQuery } from '@tanstack/react-query';
+import { referralsApi } from '@/lib/api';
 import confetti from 'canvas-confetti';
+import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '@/lib/supabase';
 
 const Growth: React.FC = () => {
-    const { user, profile } = useAuth();
-    const [referralCode, setReferralCode] = useState('');
-    const [stats, setStats] = useState({
-        totalReferrals: 0,
-        convertedFriends: 0,
-        creditsEarned: 0,
-        estimatedSaved: 0
+    const { user } = useAuth();
+    
+    const { data: statsData, isLoading, refetch } = useQuery({
+        queryKey: ['referral-stats'],
+        queryFn: async () => {
+            const res = await referralsApi.getStats();
+            return res.data.data;
+        },
+        enabled: !!user
+    });
+
+    const { data: leaderboardData } = useQuery({
+        queryKey: ['referral-leaderboard'],
+        queryFn: async () => {
+            const res = await referralsApi.getLeaderboard();
+            return res.data.data;
+        },
+        enabled: !!user
     });
 
     useEffect(() => {
-        if (profile) {
-            setReferralCode(profile.referral_code || '');
-            fetchStats();
-        }
-    }, [profile]);
-
-    const fetchStats = async () => {
         if (!user) return;
-        
-        // Fetch total referrals from the referrals table
-        const { data: referrals, error } = await supabase
-            .from('referrals')
-            .select('*')
-            .eq('referrer_id', user.id);
 
-        if (referrals) {
-            const total = referrals.length;
-            const converted = referrals.filter(r => r.status === 'converted').length;
-            const credits = referrals.reduce((acc, curr) => acc + (curr.credits_awarded || 0), 0);
-            
-            setStats({
-                totalReferrals: total,
-                convertedFriends: converted,
-                creditsEarned: credits,
-                estimatedSaved: Math.round(credits * 0.15) // $0.15 per credit saved
-            });
-        }
-    };
+        const channel = supabase
+            .channel('referral-updates')
+            .on(
+                'postgres_changes', 
+                { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'referrals',
+                    filter: `referrerId=eq.${user.id}` 
+                }, 
+                (payload) => {
+                    refetch();
+                    if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'converted') {
+                        confetti({
+                            particleCount: 150,
+                            spread: 70,
+                            origin: { y: 0.6 }
+                        });
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user, refetch]);
 
     const copyToClipboard = () => {
-        const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
-        const link = `${baseUrl}/auth?ref=${referralCode}`;
-        navigator.clipboard.writeText(link);
-        toast.success("Referral link copied!", {
-            description: "Share it with your network to earn credits."
-        });
+        if (!statsData?.referralLink) return;
+        navigator.clipboard.writeText(statsData.referralLink);
+        toast.success('Referral link copied!');
         confetti({
-            particleCount: 20,
-            spread: 30,
-            origin: { y: 0.8 },
-            colors: ['#3B82F6', '#8B5CF6']
+            particleCount: 40,
+            spread: 50,
+            origin: { y: 0.8 }
         });
     };
 
     const shareSocial = (platform: string) => {
-        const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
-        const link = encodeURIComponent(`${baseUrl}/auth?ref=${referralCode}`);
-        const text = encodeURIComponent("I'm using LeadRockets to automate my sales with AI. Join me and get free credits! 🚀");
+        const link = statsData?.referralLink;
+        if (!link) return;
         
         let url = '';
         switch(platform) {
-            case 'twitter': url = `https://twitter.com/intent/tweet?url=${link}&text=${text}`; break;
-            case 'linkedin': url = `https://www.linkedin.com/sharing/share-offsite/?url=${link}`; break;
-            case 'whatsapp': url = `https://wa.me/?text=${text}%20${link}`; break;
+            case 'twitter': 
+                url = `https://twitter.com/intent/tweet?text=I'm using LeadRockets for AI-powered sales outreach. Join me:&url=${encodeURIComponent(link)}`; 
+                break;
+            case 'linkedin': 
+                url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}`; 
+                break;
+            case 'whatsapp': 
+                url = `https://wa.me/?text=Check out LeadRockets: ${encodeURIComponent(link)}`; 
+                break;
         }
         window.open(url, '_blank');
     };
 
+    if (isLoading) return <div className="p-12 text-center text-white">Loading Growth Engine...</div>;
+
+    const stats = statsData || {
+        totalReferrals: 0,
+        convertedReferrals: 0,
+        totalCreditsEarned: 0,
+        currentCredits: 0,
+        referralLink: '',
+        referrals: [],
+        recentTransactions: []
+    };
+
+    const tiers = [
+        { referrals: 1,  reward: '500 AI Credits',           color: 'from-amber-700 to-amber-900', label: 'Bronze' },
+        { referrals: 3,  reward: '1,000 Bonus Credits',       color: 'from-slate-400 to-slate-600', label: 'Silver' },
+        { referrals: 5,  reward: '2,500 Credits + Pro Badge',  color: 'from-amber-400 to-amber-600', label: 'Gold'   },
+        { referrals: 10, reward: 'Founding Member + 5,000 Credits', color: 'from-blue-500 to-indigo-600', label: 'Diamond' }
+    ];
+
+    const currentTierIndex = tiers.findLastIndex(t => stats.convertedReferrals >= t.referrals);
+    const nextTier = tiers.find(t => stats.convertedReferrals < t.referrals);
+    const progress = nextTier 
+        ? ((stats.convertedReferrals - (currentTierIndex >= 0 ? tiers[currentTierIndex].referrals : 0)) / (nextTier.referrals - (currentTierIndex >= 0 ? tiers[currentTierIndex].referrals : 0))) * 100
+        : 100;
+
     return (
-        <div className="max-w-7xl mx-auto space-y-12 pb-24">
-            {/* Hero Section */}
+        <div className="max-w-7xl mx-auto space-y-12 pb-24 px-4 pt-8">
+            {/* SECTION 1 — Hero referral widget */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-12 text-white shadow-2xl shadow-blue-500/20"
+                className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-8 md:p-12 text-white shadow-2xl shadow-blue-500/20"
             >
-                <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                    <div className="space-y-6">
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-12">
+                    <div className="space-y-6 flex-1 w-full">
                         <Badge className="bg-white/20 text-white border-none px-4 py-1.5 text-xs font-black uppercase tracking-widest">
                             Growth Engine 🚀
                         </Badge>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter leading-[0.9]">
-                            Turn your network <br /> into <span className="text-white/80">AI Credits</span>
+                        <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-[0.9]">
+                            Your Growth Engine
                         </h1>
                         <p className="text-xl text-blue-100 font-medium max-w-md">
-                            Help your friends grow with LeadRockets and unlock premium features for yourself.
+                            Invite your friends and earn massive AI credits for every conversion.
                         </p>
                         
                         <div className="flex flex-col sm:flex-row gap-4 pt-4">
                             <div className="flex-1 relative group">
                                 <Input 
                                     readOnly 
-                                    value={`${(import.meta.env.VITE_APP_URL || window.location.origin).replace('https://', '').replace('http://', '')}/auth?ref=${referralCode}`}
+                                    value={stats.referralLink}
                                     className="h-14 bg-white/10 border-white/20 text-white font-bold pl-4 pr-12 rounded-2xl backdrop-blur-md"
                                 />
                                 <Button 
@@ -139,106 +176,142 @@ const Growth: React.FC = () => {
                                 <Button size="icon" variant="ghost" onClick={() => shareSocial('twitter')} className="h-14 w-14 bg-white/10 hover:bg-white/20 text-white rounded-2xl backdrop-blur-md">
                                     <Twitter className="w-6 h-6" />
                                 </Button>
+                                <Button size="icon" variant="ghost" onClick={() => shareSocial('whatsapp')} className="h-14 w-14 bg-white/10 hover:bg-white/20 text-white rounded-2xl backdrop-blur-md">
+                                    <MessageCircle className="w-6 h-6" />
+                                </Button>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-6 rounded-[24px] bg-white/10 border border-white/10 backdrop-blur-md">
-                            <Users className="w-8 h-8 mb-4 text-blue-200" />
-                            <div className="text-4xl font-black">{stats.totalReferrals}</div>
-                            <div className="text-sm font-bold text-blue-200 uppercase tracking-widest">Referrals Made</div>
-                        </div>
-                        <div className="p-6 rounded-[24px] bg-white/10 border border-white/10 backdrop-blur-md">
-                            <Zap className="w-8 h-8 mb-4 text-amber-300" />
-                            <div className="text-4xl font-black">{stats.creditsEarned.toLocaleString()}</div>
-                            <div className="text-sm font-bold text-blue-200 uppercase tracking-widest">Credits Earned</div>
-                        </div>
-                        <div className="p-6 rounded-[24px] bg-white/10 border border-white/10 backdrop-blur-md">
-                            <CheckCircle2 className="w-8 h-8 mb-4 text-green-300" />
-                            <div className="text-4xl font-black">{stats.convertedFriends}</div>
-                            <div className="text-sm font-bold text-blue-200 uppercase tracking-widest">Friends Converted</div>
-                        </div>
-                        <div className="p-6 rounded-[24px] bg-white/10 border border-white/10 backdrop-blur-md">
-                            <TrendingUp className="w-8 h-8 mb-4 text-purple-300" />
-                            <div className="text-4xl font-black">${stats.estimatedSaved}</div>
-                            <div className="text-sm font-bold text-blue-200 uppercase tracking-widest">Est. $ Saved</div>
-                        </div>
+                    <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
+                        <StatCard icon={<Users className="text-blue-200"/>} label="Total Referrals" value={stats.totalReferrals} />
+                        <StatCard icon={<CheckCircle2 className="text-green-300"/>} label="Converted" value={stats.convertedReferrals} />
+                        <StatCard icon={<TrendingUp className="text-purple-300"/>} label="Credits Earned" value={stats.totalCreditsEarned.toLocaleString()} />
+                        <StatCard icon={<Zap className="text-amber-300"/>} label="Current Balance" value={stats.currentCredits.toLocaleString()} />
                     </div>
                 </div>
-
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-white/10 blur-[100px] rounded-full" />
-                <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-blue-400/20 blur-[80px] rounded-full" />
             </motion.div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Rewards Ladder */}
-                <div className="lg:col-span-2">
-                    <Card className="h-full border-none bg-[#0D0D0D] shadow-xl">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-2">
-                                        <Trophy className="w-6 h-6 text-amber-500" />
-                                        Rewards Ladder
-                                    </CardTitle>
-                                    <CardDescription className="text-slate-500 font-medium pt-1">
-                                        Refer more friends to climb the tiers and unlock lifetime perks.
-                                    </CardDescription>
+            {/* SECTION 2 — Rewards ladder */}
+            <Card className="border-none bg-[#0D0D0D] shadow-xl p-8">
+                <CardHeader className="px-0">
+                    <CardTitle className="text-3xl font-black tracking-tight flex items-center gap-2 text-white">
+                        <Trophy className="w-8 h-8 text-amber-500" />
+                        Rewards Ladder
+                    </CardTitle>
+                    <CardDescription>Climb the ranks and unlock premium rewards.</CardDescription>
+                </CardHeader>
+                <CardContent className="px-0 pt-8">
+                    <div className="space-y-12">
+                        {tiers.map((tier, i) => (
+                            <motion.div 
+                                key={tier.label}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                className={`flex items-center gap-6 p-6 rounded-3xl border-2 transition-all ${
+                                    stats.convertedReferrals >= tier.referrals 
+                                        ? 'border-blue-600 bg-blue-600/10' 
+                                        : i === currentTierIndex + 1 ? 'border-slate-800 bg-white/5' : 'border-white/5 opacity-50'
+                                }`}
+                            >
+                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br ${tier.color} shadow-lg shrink-0`}>
+                                    {stats.convertedReferrals >= tier.referrals ? <CheckCircle2 className="w-8 h-8 text-white" /> : <Star className="w-8 h-8 text-white/50" />}
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-3xl font-black text-primary">{stats.convertedFriends}</div>
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total Conversions</div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <h4 className="text-xl font-black text-white">{tier.label} Tier</h4>
+                                        <span className="text-sm font-bold text-slate-500">{tier.referrals} Referrals</span>
+                                    </div>
+                                    <p className="text-slate-400 font-medium">{tier.reward}</p>
+                                    {i === currentTierIndex + 1 && (
+                                        <div className="mt-4 h-2 bg-white/5 rounded-full overflow-hidden">
+                                            <motion.div 
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${progress}%` }}
+                                                className="h-full bg-blue-600"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* SECTION 3 — Activity + Leaderboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <Card className="border-none bg-[#0D0D0D] shadow-xl">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-black flex items-center gap-2 text-white">
+                            <Clock className="w-6 h-6 text-blue-500" />
+                            Recent Activity
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {stats.recentTransactions.length > 0 ? stats.recentTransactions.map((t: any) => (
+                            <div key={t.id} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${t.amount > 0 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                    {t.amount > 0 ? <Zap className="w-5 h-5" /> : <TrendingUp className="w-5 h-5 rotate-180" />}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-bold text-white">{t.description}</p>
+                                    <p className="text-xs text-slate-500">{formatDistanceToNow(new Date(t.createdAt), { addSuffix: true })}</p>
+                                </div>
+                                <div className={`text-sm font-black ${t.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {t.amount > 0 ? '+' : ''}{t.amount}
                                 </div>
                             </div>
-                        </CardHeader>
-                        <CardContent className="pt-6 pb-12">
-                            <RewardsLadder currentConversions={stats.convertedFriends} />
-                        </CardContent>
-                    </Card>
-                </div>
+                        )) : (
+                            <div className="text-center py-8 text-slate-500">No recent activity.</div>
+                        )}
+                    </CardContent>
+                </Card>
 
-                {/* Activity Feed */}
-                <div className="lg:col-span-1">
-                    <Card className="h-full border-none bg-[#0D0D0D] shadow-xl overflow-hidden flex flex-col">
-                        <CardHeader className="border-b border-white/5 pb-6">
-                            <CardTitle className="text-xl font-black tracking-tight flex items-center gap-2">
-                                <Clock className="w-5 h-5 text-blue-500" />
-                                Growth Activity
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-1 p-0">
-                            <ReferralFeed userId={user?.id} />
-                        </CardContent>
-                    </Card>
-                </div>
+                <Card className="border-none bg-[#0D0D0D] shadow-xl">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-black flex items-center gap-2 text-white">
+                            <Trophy className="w-6 h-6 text-amber-500" />
+                            Top Referrers
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-2xl overflow-hidden border border-white/5">
+                            <table className="w-full">
+                                <thead className="bg-white/5 text-slate-500 text-xs font-black uppercase tracking-widest">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left">Rank</th>
+                                        <th className="px-6 py-4 text-left">User</th>
+                                        <th className="px-6 py-4 text-right">Referrals</th>
+                                        <th className="px-6 py-4 text-right">Credits</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {leaderboardData?.map((user: any, i: number) => (
+                                        <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                                            <td className="px-6 py-4 text-sm font-bold text-slate-500">#{i + 1}</td>
+                                            <td className="px-6 py-4 text-sm font-bold text-white">{user.name}</td>
+                                            <td className="px-6 py-4 text-sm font-black text-blue-500 text-right">{user._count.referrals}</td>
+                                            <td className="px-6 py-4 text-sm font-black text-amber-500 text-right">{user.aiCredits.toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
-
-            {/* Founding Member Banner (Conditional) */}
-            {stats.convertedFriends >= 10 && (
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-8 rounded-3xl bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border border-amber-500/20 flex items-center justify-between"
-                >
-                    <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-2xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                            <Star className="w-10 h-10 text-white fill-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-2xl font-black text-amber-500 tracking-tighter">Founding Member Badge Unlocked!</h3>
-                            <p className="text-slate-400 font-medium">You have achieved legend status. Your pricing is now locked in for life.</p>
-                        </div>
-                    </div>
-                    <Button variant="outline" className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10 font-bold px-8 h-12 rounded-xl uppercase tracking-widest text-xs">
-                        View Certificate
-                    </Button>
-                </motion.div>
-            )}
         </div>
     );
 };
+
+const StatCard = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) => (
+    <div className="p-6 rounded-[24px] bg-white/10 border border-white/10 backdrop-blur-md">
+        <div className="mb-4">{icon}</div>
+        <div className="text-3xl font-black">{value}</div>
+        <div className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">{label}</div>
+    </div>
+);
 
 export default Growth;

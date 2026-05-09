@@ -9,22 +9,18 @@ import { Label } from "@/components/ui/label";
 import { 
   ArrowLeft, Save, Send, Calendar, Sparkles, 
   Lightbulb, CheckCircle2, AlertCircle, Info, ChevronRight,
-  AlertTriangle, Loader2
+  AlertTriangle, Loader2, Zap
 } from "lucide-react";
-import { 
-  analyzeSubjectLine, 
-  SubjectLineAnalysis, 
-  remixEmailBody,
-  generateSubjectLines 
-} from "@/lib/gemini";
 import { useCampaigns, Campaign } from "@/hooks/useCampaigns";
 import { useLeads } from "@/hooks/useLeads";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { debounce } from "lodash";
 import ShareWinModal from "@/components/campaigns/ShareWinModal";
 import confetti from 'canvas-confetti';
+import { useDebounce } from "@/hooks/useDebounce";
+import { useQuery } from "@tanstack/react-query";
+import api, { aiApi } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export default function CampaignBuilder() {
   const { id } = useParams();
@@ -55,18 +53,19 @@ export default function CampaignBuilder() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [selectedListId, setSelectedListId] = useState<string>("");
-  const [analysis, setAnalysis] = useState<SubjectLineAnalysis | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isRemixing, setIsRemixing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isRemixing, setIsRemixing] = useState(false);
   const [suggestedSubjects, setSuggestedSubjects] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showConfirmSend, setShowConfirmSend] = useState(false);
-  const [geminiStatus, setGeminiStatus] = useState<'ok' | 'missing_key' | 'error'>('ok');
   const [scheduledDate, setScheduledDate] = useState("");
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+
+  // Debounce subject and body for AI scoring
+  const debouncedSubject = useDebounce(subject, 800);
+  const debouncedBody = useDebounce(body, 800);
 
   // Load existing campaign if editing
   useEffect(() => {
@@ -76,36 +75,26 @@ export default function CampaignBuilder() {
         setName(existing.name);
         setSubject(existing.subject_line);
         setBody(existing.body);
-        // If we had a list_id in the table, we'd set it here
       }
     }
   }, [id, campaigns]);
 
-  // AI Analysis Effect
-  const debouncedAnalysis = useCallback(
-    debounce(async (val: string) => {
-      if (val.length < 3) return;
-      setIsAnalyzing(true);
-      try {
-        const res = await analyzeSubjectLine(val);
-        setAnalysis(res);
-        setGeminiStatus('ok');
-      } catch (err: any) {
-        if (err.message === 'MISSING_API_KEY') {
-          setGeminiStatus('missing_key');
-        } else {
-          setGeminiStatus('error');
-        }
-      } finally {
-        setIsAnalyzing(false);
-      }
-    }, 800),
-    []
-  );
-
-  useEffect(() => {
-    debouncedAnalysis(subject);
-  }, [subject, debouncedAnalysis]);
+  // AI Scoring Query
+  const { data: scoreData, isLoading: scoring } = useQuery({
+    queryKey: ['campaign-score', debouncedSubject, debouncedBody],
+    queryFn: async () => {
+      if (!debouncedSubject || !debouncedBody) return null;
+      const res = await aiApi.scoreCampaign({
+        subjectLine: debouncedSubject,
+        body: debouncedBody,
+        targetIndustry: profile?.industry ?? 'General',
+        leadCount: leadLists.find(l => l.id === selectedListId)?.lead_count ?? 0,
+        sendTime: scheduledDate
+      });
+      return res.data.data;
+    },
+    enabled: debouncedSubject.length > 5 && debouncedBody.length > 20
+  });
 
   const handleSaveDraft = async () => {
     if (!name) return toast.error("Campaign name is required");
@@ -116,7 +105,7 @@ export default function CampaignBuilder() {
         subject_line: subject,
         body,
         status: 'draft',
-        ai_score: analysis?.score || 0,
+        ai_score: scoreData?.overallScore || 0,
       };
 
       if (id) {
@@ -150,8 +139,7 @@ export default function CampaignBuilder() {
     try {
       await sendCampaign(id);
       
-      const analysisScore = analysis?.score || 0;
-      if (analysisScore >= 80) {
+      if ((scoreData?.overallScore || 0) >= 80) {
         confetti({
           particleCount: 150,
           spread: 70,
@@ -162,20 +150,7 @@ export default function CampaignBuilder() {
         navigate("/campaigns");
       }
     } catch (err: any) {
-      const errorMsg = err.response?.data?.error || err.message;
-      const errorCode = err.response?.data?.code;
-
-      if (errorCode === 'LIMIT_EXCEEDED') {
-        toast.error("You've reached your plan limit — upgrade to send more", {
-          action: {
-            label: "Upgrade",
-            onClick: () => navigate("/billing")
-          },
-          duration: 6000
-        });
-      } else {
-        toast.error(`Launch aborted: ${errorMsg}`);
-      }
+      toast.error(`Launch aborted: ${err.message}`);
     } finally {
       setIsSending(false);
     }
@@ -190,7 +165,6 @@ export default function CampaignBuilder() {
 
   const confirmSchedule = async () => {
     if (!scheduledDate) return toast.error("Please select a date and time");
-    
     setIsSaving(true);
     setShowScheduleDialog(false);
     try {
@@ -220,11 +194,16 @@ export default function CampaignBuilder() {
   const handleRemix = async () => {
     setIsRemixing(true);
     try {
-      const newBody = await remixEmailBody(body);
-      setBody(newBody);
+      const res = await aiApi.remixCampaign({
+        subjectLine: subject,
+        body: body,
+        industry: profile?.industry ?? 'General'
+      });
+      setSubject(res.data.data.subjectLine);
+      setBody(res.data.data.body);
       toast.success("AI Remix complete! ✨");
     } catch (err) {
-      toast.error("Remix failed. Check your Gemini key.");
+      toast.error("Remix failed.");
     } finally {
       setIsRemixing(false);
     }
@@ -233,11 +212,14 @@ export default function CampaignBuilder() {
   const handleGenerateSubjects = async () => {
     const loadingToast = toast.loading("Generating hooks...");
     try {
-      const subjects = await generateSubjectLines(name || "New Campaign", profile?.company_name || "B2B SaaS", "Lead Generation");
-      setSuggestedSubjects(subjects);
+      const res = await aiApi.generateSubjects({
+        context: name || "New Campaign",
+        industry: profile?.industry ?? 'General'
+      });
+      setSuggestedSubjects(res.data.data);
       setShowSuggestions(true);
     } catch (err) {
-      toast.error("Generation failed. Check API key.");
+      toast.error("Generation failed.");
     } finally {
       toast.dismiss(loadingToast);
     }
@@ -245,21 +227,7 @@ export default function CampaignBuilder() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-[1600px] mx-auto px-4 pb-20">
-        {/* Gemini Warning Banner */}
-        {geminiStatus === 'missing_key' && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            className="mb-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center gap-3"
-          >
-            <AlertTriangle className="w-5 h-5 text-amber-500" />
-            <p className="text-xs font-black uppercase tracking-widest text-amber-500">
-              Add Gemini API key in Settings to enable AI scoring and suggestions.
-            </p>
-          </motion.div>
-        )}
-
+      <div className="max-w-[1600px] mx-auto px-4 pb-20 pt-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-12">
           <div className="flex items-center gap-6">
@@ -294,15 +262,9 @@ export default function CampaignBuilder() {
                       {list.name} ({list.lead_count})
                     </SelectItem>
                   ))}
-                  {leadLists.length === 0 && (
-                    <div className="p-4 text-[10px] font-bold text-slate-500 text-center italic">No lists found</div>
-                  )}
                 </SelectContent>
               </Select>
             </div>
-            <Button variant="ghost" className="text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 h-12 rounded-2xl mt-5">
-              Preview
-            </Button>
           </div>
         </div>
 
@@ -316,7 +278,7 @@ export default function CampaignBuilder() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Q4 Enterprise Outreach"
-                  className="bg-transparent border-none text-2xl font-black tracking-tighter p-0 focus-visible:ring-0 placeholder:text-slate-800 h-auto"
+                  className="bg-transparent border-none text-2xl font-black tracking-tighter p-0 focus-visible:ring-0 placeholder:text-slate-800 h-auto text-white"
                 />
               </div>
 
@@ -340,7 +302,7 @@ export default function CampaignBuilder() {
                     placeholder="Enter your compelling subject line..."
                     className="bg-white/5 border-white/5 h-14 rounded-2xl px-6 font-bold tracking-tight text-white focus:border-blue-500/50 transition-all"
                   />
-                  {isAnalyzing && (
+                  {scoring && (
                     <div className="absolute right-4 top-1/2 -translate-y-1/2">
                       <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                     </div>
@@ -356,7 +318,7 @@ export default function CampaignBuilder() {
                       className="absolute left-0 right-0 top-full mt-4 p-6 bg-[#1A1A1A] border border-white/5 rounded-3xl z-50 shadow-2xl backdrop-blur-xl"
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">AI Suggested Hooks</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-white">AI Suggested Hooks</h4>
                         <button onClick={() => setShowSuggestions(false)} className="text-[9px] font-black uppercase text-slate-600 hover:text-white">Close</button>
                       </div>
                       <div className="space-y-3">
@@ -367,7 +329,7 @@ export default function CampaignBuilder() {
                               setSubject(s);
                               setShowSuggestions(false);
                             }}
-                            className="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-blue-600/10 hover:text-blue-400 transition-all font-bold tracking-tight text-sm"
+                            className="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-blue-600/10 hover:text-blue-400 transition-all font-bold tracking-tight text-sm text-white"
                           >
                             {s}
                           </button>
@@ -390,56 +352,55 @@ export default function CampaignBuilder() {
           {/* Right Panel - AI Stats (40%) */}
           <div className="lg:col-span-2 space-y-8 sticky top-24">
             <section className="bg-[#111111] border border-white/5 rounded-3xl p-10 flex flex-col items-center">
-              <ArcMeter score={analysis?.score || 0} />
+              <ArcMeter score={scoreData?.overallScore || 0} />
               
               <div className="w-full mt-12 space-y-8">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">AI Feedback</span>
-                    {analysis && (
-                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest">
-                        <Sparkles className="w-3 h-3" />
-                        AI Verified
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-sm font-bold text-slate-200 leading-relaxed italic">
-                    {analysis?.feedback || "Start typing your subject line to receive expert AI feedback in real-time."}
-                  </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <StatBar label="Subject" score={scoreData?.subjectScore || 0} />
+                  <StatBar label="Body" score={scoreData?.bodyScore || 0} />
+                  <StatBar label="Timing" score={scoreData?.timingScore || 0} />
+                  <StatBar label="Audience" score={scoreData?.audienceScore || 0} />
                 </div>
-
-                {analysis?.suggestions && analysis.suggestions.length > 0 && (
-                  <div className="space-y-4">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Suggested Fixes</span>
-                    <div className="flex flex-wrap gap-3">
-                      {analysis.suggestions.map((s, i) => (
-                        <div key={i} className="px-4 py-2 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-default">
-                          {s}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="h-px bg-white/5" />
 
                 <div className="grid grid-cols-2 gap-6">
-                  <StatItem label="Audience Match" value="High" icon={<CheckCircle2 className="text-emerald-500 w-4 h-4" />} />
-                  <StatItem label="Spam Risk" value="Low" icon={<CheckCircle2 className="text-emerald-500 w-4 h-4" />} />
-                  <StatItem label="Deliverability" value="98%" icon={<Info className="text-blue-500 w-4 h-4" />} />
-                  <StatItem label="Boredom Level" value="None" icon={<AlertCircle className="text-emerald-500 w-4 h-4" />} />
+                  <StatItem label="Predicted Open" value={`${((scoreData?.predictedOpenRate || 0) * 100).toFixed(1)}%`} icon={<Info className="text-blue-500 w-4 h-4" />} />
+                  <StatItem label="Predicted Reply" value={`${((scoreData?.predictedReplyRate || 0) * 100).toFixed(1)}%`} icon={<Info className="text-blue-500 w-4 h-4" />} />
+                </div>
+
+                {scoreData?.suggestions && (
+                  <div className="space-y-4">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">AI Suggestions</span>
+                    <div className="flex flex-wrap gap-2">
+                      {scoreData.suggestions.map((s: string, i: number) => (
+                        <Badge key={i} variant="outline" className="bg-white/5 border-white/5 text-slate-400 text-[10px] py-1 px-3">
+                          {s}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex flex-col gap-3">
+                    <Button 
+                        onClick={handleRemix} 
+                        disabled={isRemixing}
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-black uppercase tracking-widest text-xs h-12 rounded-2xl gap-2"
+                    >
+                        {isRemixing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        ✦ Remix with AI
+                    </Button>
+                    <Button 
+                        onClick={handleGenerateSubjects}
+                        variant="outline"
+                        className="w-full border-white/5 bg-white/5 text-white font-black uppercase tracking-widest text-xs h-12 rounded-2xl gap-2"
+                    >
+                        <Lightbulb className="w-4 h-4" />
+                        💡 Generate Subjects
+                    </Button>
                 </div>
               </div>
-            </section>
-
-            <section className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/10 rounded-3xl p-8">
-              <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white flex items-center gap-2 mb-4">
-                <Lightbulb className="w-4 h-4 text-amber-500" />
-                Expert Optimization Tip
-              </h4>
-              <p className="text-xs font-bold text-slate-400 leading-relaxed uppercase tracking-widest">
-                Emails sent between 9:00 AM and 11:00 AM exhibit 34% higher engagement rates in your industry.
-              </p>
             </section>
           </div>
         </div>
@@ -485,7 +446,7 @@ export default function CampaignBuilder() {
             navigate("/campaigns");
         }}
         campaignName={name || "New Campaign"}
-        score={analysis?.score || 0}
+        score={scoreData?.overallScore || 0}
       />
 
       <AlertDialog open={showConfirmSend} onOpenChange={setShowConfirmSend}>
@@ -493,30 +454,9 @@ export default function CampaignBuilder() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-black tracking-tighter text-white">Blast Off Confirmation</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500 font-bold uppercase tracking-[0.1em] text-[10px] mt-2">
-              You are about to send this campaign to <span className="text-white">{leadLists.find(l => l.id === selectedListId)?.lead_count || 0} recipients</span>.
+              You are about to send this campaign.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-8 space-y-6">
-            <div className="p-6 bg-white/5 rounded-2xl space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">AI Success Score</span>
-                <span className={cn(
-                  "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                  (analysis?.score || 0) > 80 ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
-                )}>
-                  {analysis?.score || 0}%
-                </span>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Subject Preview</span>
-                <p className="text-sm font-bold text-white tracking-tight truncate">{subject}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
-              <CheckCircle2 className="w-5 h-5 text-blue-500" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Targeting {leadLists.find(l => l.id === selectedListId)?.name} list</p>
-            </div>
-          </div>
           <AlertDialogFooter className="flex items-center gap-4">
             <AlertDialogCancel className="bg-transparent border-white/5 text-slate-500 hover:text-white hover:bg-white/5 h-12 rounded-2xl font-black uppercase tracking-widest text-[10px] px-8">
               Wait, One Sec
@@ -549,10 +489,6 @@ export default function CampaignBuilder() {
                 className="bg-white/5 border-white/5 h-14 rounded-2xl px-6 font-bold text-white focus:border-blue-500/50"
               />
             </div>
-            <div className="flex items-center gap-3 p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl">
-              <Calendar className="w-5 h-5 text-purple-500" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-purple-400">Targeting {leadLists.find(l => l.id === selectedListId)?.name} list</p>
-            </div>
           </div>
           <AlertDialogFooter className="flex items-center gap-4">
             <AlertDialogCancel className="bg-transparent border-white/5 text-slate-500 hover:text-white hover:bg-white/5 h-12 rounded-2xl font-black uppercase tracking-widest text-[10px] px-8">
@@ -581,4 +517,28 @@ function StatItem({ label, value, icon }: { label: string, value: string, icon: 
       </div>
     </div>
   );
+}
+
+function StatBar({ label, score }: { label: string, score: number }) {
+    const getColor = (s: number) => {
+        if (s <= 40) return "bg-red-500";
+        if (s <= 70) return "bg-amber-500";
+        return "bg-emerald-500";
+    };
+    
+    return (
+        <div className="space-y-2">
+            <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-500">
+                <span>{label}</span>
+                <span>{score}%</span>
+            </div>
+            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${score}%` }}
+                    className={cn("h-full", getColor(score))}
+                />
+            </div>
+        </div>
+    );
 }

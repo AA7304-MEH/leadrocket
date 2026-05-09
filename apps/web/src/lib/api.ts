@@ -118,11 +118,26 @@ export const campaignsApi = {
     getStats: () => api.get<{ success: boolean; data: { total: number; active: number; sent: number; avgReplyRate: number } }>('/campaigns/stats'),
 };
 
-// ==================== DASHBOARD ====================
-export const dashboardApi = {
-    getMetrics: () => api.get('/analytics/dashboard'),
-    getActivity: () => api.get('/analytics/activity'),
-    getInsights: () => api.get('/ai/insights'),
+// ==================== AI ====================
+export const aiApi = {
+    scoreCampaign: (data: any) => api.post('/ai/score-campaign', data),
+    remixCampaign: (data: any) => api.post('/ai/remix-campaign', data),
+    generateSubjects: (data: any) => api.post('/ai/generate-subjects', data),
+};
+
+// ==================== MARKETPLACE ====================
+export const marketplaceApi = {
+    getTemplates: (params: any) => api.get('/marketplace', { params }),
+    publishTemplate: (data: any) => api.post('/marketplace/publish', data),
+    useTemplate: (id: string) => api.post(`/marketplace/${id}/use`),
+    purchaseTemplate: (id: string) => api.post(`/marketplace/${id}/purchase`),
+    reviewTemplate: (id: string, data: any) => api.post(`/marketplace/${id}/review`, data),
+};
+
+// ==================== REFERRALS ====================
+export const referralsApi = {
+    getStats: () => api.get('/referrals/stats'),
+    getLeaderboard: () => api.get('/referrals/leaderboard'),
 };
 
 // ==================== USER/SUBSCRIPTION ====================
