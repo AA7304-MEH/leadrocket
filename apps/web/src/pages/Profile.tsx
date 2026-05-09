@@ -26,7 +26,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 const Profile: React.FC = () => {
