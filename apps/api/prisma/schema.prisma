@@ -62,6 +62,8 @@ model User {
 
   // Relations
   subscription Subscription?
+  gameStats    GameStats?
+  referralLink ReferralCode?
   leads        Lead[]
   campaigns    Campaign[]
   workflows    Workflow[]
@@ -239,4 +241,27 @@ model TemplateReview {
   rating      Int      // 1-5
   comment     String?
   createdAt   DateTime @default(now())
+}
+
+model GameStats {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  xp           Int      @default(0)
+  level        Int      @default(1)
+  achievements String   @default("[]") // JSON string
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ReferralCode {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  code      String   @unique
+  invites   Int      @default(0)
+  clicks    Int      @default(0)
+  earnings  Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

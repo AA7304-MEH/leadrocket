@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+e2e/test-results/
+e2e/test-report/
+e2e/screenshots/
+e2e/scratch/
+e2e/node_modules/

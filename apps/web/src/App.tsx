@@ -1,3 +1,4 @@
+console.log('APP.TSX: MODULE EXECUTING');
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,6 +29,7 @@ import Team from "./pages/Team";
 import EmailInfrastructure from "./pages/EmailInfrastructure";
 import Billing from "./pages/Billing";
 import Growth from "./pages/Growth";
+import Marketplace from "./pages/Marketplace";
 
 // Configure React Query with caching
 const queryClient = new QueryClient({
@@ -77,22 +79,23 @@ const AppRouter = () => {
           <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Auth />} />
           <Route path="/onboarding" element={<Onboarding />} />
 
-          {/* Dashboard Routes */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/campaigns" element={<Campaigns />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/team" element={<Team />} />
-          <Route path="/email-infrastructure" element={<EmailInfrastructure />} />
-          <Route path="/billing" element={<Billing />} />
-          <Route path="/growth" element={<Growth />} />
+          {/* Protected Dashboard Routes — require authentication */}
+          <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} />
+          <Route path="/leads" element={isAuthenticated ? <Leads /> : <Navigate to="/login" replace />} />
+          <Route path="/campaigns" element={isAuthenticated ? <Campaigns /> : <Navigate to="/login" replace />} />
+          <Route path="/analytics" element={isAuthenticated ? <Analytics /> : <Navigate to="/login" replace />} />
+          <Route path="/settings" element={isAuthenticated ? <Settings /> : <Navigate to="/login" replace />} />
+          <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" replace />} />
+          <Route path="/admin" element={isAuthenticated ? <Admin /> : <Navigate to="/login" replace />} />
+          <Route path="/team" element={isAuthenticated ? <Team /> : <Navigate to="/login" replace />} />
+          <Route path="/email-infrastructure" element={isAuthenticated ? <EmailInfrastructure /> : <Navigate to="/login" replace />} />
+          <Route path="/billing" element={isAuthenticated ? <Billing /> : <Navigate to="/login" replace />} />
+          <Route path="/growth" element={isAuthenticated ? <Growth /> : <Navigate to="/login" replace />} />
+          <Route path="/marketplace" element={isAuthenticated ? <Marketplace /> : <Navigate to="/login" replace />} />
 
           {/* Feature Routes */}
-          <Route path="/coaching" element={<CoachingDashboard />} />
-          <Route path="/integrations/new" element={<IntegrationBuilder />} />
+          <Route path="/coaching" element={isAuthenticated ? <CoachingDashboard /> : <Navigate to="/login" replace />} />
+          <Route path="/integrations/new" element={isAuthenticated ? <IntegrationBuilder /> : <Navigate to="/login" replace />} />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -102,7 +105,9 @@ const AppRouter = () => {
   );
 };
 
-const App = () => (
+const App = () => {
+  console.log('APP.TSX: RENDERING APP COMPONENT');
+  return (
   <ErrorBoundary
     onError={(error, errorInfo) => {
       console.error("[ErrorBoundary]", error.message, errorInfo.componentStack);
@@ -124,5 +129,6 @@ const App = () => (
     </QueryClientProvider>
   </ErrorBoundary>
 );
+};
 
 export default App;

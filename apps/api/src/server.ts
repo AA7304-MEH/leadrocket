@@ -138,7 +138,7 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+      console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'https://leadrocket-xi.vercel.app'}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

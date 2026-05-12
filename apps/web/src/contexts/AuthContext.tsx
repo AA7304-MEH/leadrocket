@@ -37,17 +37,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     async function verifySession() {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s hard timeout
       try {
         const res = await fetch(
           `${import.meta.env.VITE_API_URL}/api/auth/me`,
-          { headers: { Authorization: `Bearer ${savedToken}` } }
+          { headers: { Authorization: `Bearer ${savedToken}` }, signal: controller.signal }
         )
+        clearTimeout(timeoutId)
         if (!res.ok) throw new Error('Invalid token')
         const userData = await res.json()
         setUser(userData)
         setToken(savedToken)
         setRole(userData.role)
       } catch {
+        clearTimeout(timeoutId)
         localStorage.removeItem('lr_token')
         setUser(null)
         setToken(null)
