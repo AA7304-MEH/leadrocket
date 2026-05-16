@@ -45,6 +45,11 @@ const Onboarding: React.FC = () => {
   const prevStep = () => setStep(step - 1);
 
   const handleCompanySubmit = async () => {
+    if (!user) {
+      toast.error('Session lost. Please log in again.');
+      navigate('/auth');
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase
@@ -55,7 +60,7 @@ const Onboarding: React.FC = () => {
           team_size: formData.teamSize,
           primary_goal: formData.goal
         })
-        .eq('id', user?.id);
+        .eq('id', user.id);
 
       if (error) throw error;
       nextStep();
@@ -90,21 +95,27 @@ const Onboarding: React.FC = () => {
   };
 
   const finalizeOnboarding = async () => {
+    if (!user) {
+      toast.error('Session lost. Please log in again.');
+      navigate('/auth');
+      return;
+    }
     setLoading(true);
     try {
       // Save leads to database if any
       if (leads.length > 0) {
         const formattedLeads = leads.map(l => ({
-          user_id: user?.id,
-          name: l.name || l.full_name || 'Prospect',
+          userId: user.id,
+          companyName: l.company || l.companyname || 'Unknown',
+          contactName: l.name || l.full_name || l.fullname || 'Prospect',
           email: l.email,
-          company: l.company || '',
-          role: l.role || l.title || '',
-          source: 'onboarding'
+          source: 'onboarding',
+          status: 'new',
+          priority: 'medium'
         }));
         
         const { error: leadsError } = await supabase
-          .from('leads')
+          .from('Lead')
           .insert(formattedLeads);
         
         if (leadsError) throw leadsError;
@@ -114,7 +125,7 @@ const Onboarding: React.FC = () => {
       const { error } = await supabase
         .from('profiles')
         .update({ onboarding_completed: true })
-        .eq('id', user?.id);
+        .eq('id', user.id);
 
       if (error) throw error;
 
