@@ -224,7 +224,8 @@ const Auth: React.FC = () => {
           )}
 
           <div className="space-y-6">
-            {!isReset && (
+            {/* Google OAuth temporarily disabled to prevent project mismatch errors */}
+            {/* {!isReset && (
               <>
                 <Button 
                   onClick={signInWithGoogle}
@@ -240,7 +241,7 @@ const Auth: React.FC = () => {
                    <div className="h-px flex-1 bg-white/5" />
                 </div>
               </>
-            )}
+            )} */}
 
             <form onSubmit={handleAuth} className="space-y-4">
               <AnimatePresence mode="wait">
